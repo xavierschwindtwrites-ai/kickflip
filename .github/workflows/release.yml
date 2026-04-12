@@ -1,0 +1,104 @@
+name: Build and Release KickFlip
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Mac installers
+        run: npm run make
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload Mac DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: KickFlip-mac-dmg
+          path: out/make/**/*.dmg
+
+      - name: Upload Mac ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: KickFlip-mac-zip
+          path: out/make/zip/**/*.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows installer
+        run: npm run make
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: KickFlip-windows
+          path: out/make/squirrel.windows/**/*.exe
+
+  release:
+    needs: [build-mac, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Mac DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: KickFlip-mac-dmg
+          path: ./artifacts
+
+      - name: Download Mac ZIP
+        uses: actions/download-artifact@v4
+        with:
+          name: KickFlip-mac-zip
+          path: ./artifacts
+
+      - name: Download Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: KickFlip-windows
+          path: ./artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./artifacts/**/*
+          generate_release_notes: true
+          body: |
+            ## KickFlip ${{ github.ref_name }}
+
+            ### Download
+            - **Mac**: Download the `.dmg` file below
+            - **Windows**: Download the `.exe` file below
+
+            ### Mac installation note
+            First time opening on Mac: right-click the app icon,
+            choose Open, then click Open in the dialog.
+            You only need to do this once.
