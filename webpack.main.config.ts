@@ -12,12 +12,12 @@ export const mainConfig: Configuration = {
   // Put your normal webpack config below here
   module: {
     rules,
+    // Don't parse sql-asm.js — it's a self-contained asm.js bundle that
+    // breaks when webpack wraps it in its module scope.
+    noParse: /sql-asm\.js$/,
   },
   plugins,
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css', '.json'],
-  },
-  externals: {
-    'better-sqlite3': 'commonjs better-sqlite3',
   },
 };

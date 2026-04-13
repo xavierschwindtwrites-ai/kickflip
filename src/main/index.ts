@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
-import { getDatabase, closeDatabase } from '../db/database';
+import { initDatabase, dbRun, dbGet, dbAll, closeDatabase } from '../db/database';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -24,43 +24,41 @@ const createWindow = (): void => {
 
 function registerIpcHandlers(): void {
   ipcMain.handle('campaign:save-data', (_, id: number, data: string) => {
-    const db = getDatabase();
-    db.prepare(
-      `UPDATE campaigns SET data = ?, updated_at = datetime('now') WHERE id = ?`
-    ).run(data, id);
+    dbRun(
+      `UPDATE campaigns SET data = ?, updated_at = datetime('now') WHERE id = ?`,
+      [data, id],
+    );
   });
 
   ipcMain.handle('campaign:load', (_, id: number) => {
-    const db = getDatabase();
-    return db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id) || null;
+    return dbGet('SELECT * FROM campaigns WHERE id = ?', [id]);
   });
 
   ipcMain.handle('campaign:ensure', () => {
-    const db = getDatabase();
-    const existing = db.prepare('SELECT * FROM campaigns ORDER BY id LIMIT 1').get();
+    const existing = dbGet('SELECT * FROM campaigns ORDER BY id LIMIT 1');
     if (existing) return existing;
-    const result = db.prepare(
-      `INSERT INTO campaigns (title) VALUES (?)`
-    ).run('My First Campaign');
-    return db.prepare('SELECT * FROM campaigns WHERE id = ?').get(result.lastInsertRowid);
+    const result = dbRun(
+      `INSERT INTO campaigns (title) VALUES (?)`,
+      ['My First Campaign'],
+    );
+    return dbGet('SELECT * FROM campaigns WHERE id = ?', [result.lastInsertRowid]);
   });
 
   ipcMain.handle('campaign:list', () => {
-    const db = getDatabase();
-    return db.prepare('SELECT id, title FROM campaigns ORDER BY updated_at DESC').all();
+    return dbAll('SELECT id, title FROM campaigns ORDER BY updated_at DESC');
   });
 
   ipcMain.handle('campaign:create', (_, title: string, data: string) => {
-    const db = getDatabase();
-    const result = db.prepare(
-      `INSERT INTO campaigns (title, data) VALUES (?, ?)`
-    ).run(title, data);
-    return db.prepare('SELECT * FROM campaigns WHERE id = ?').get(result.lastInsertRowid);
+    const result = dbRun(
+      `INSERT INTO campaigns (title, data) VALUES (?, ?)`,
+      [title, data],
+    );
+    return dbGet('SELECT * FROM campaigns WHERE id = ?', [result.lastInsertRowid]);
   });
 }
 
-app.on('ready', () => {
-  getDatabase();
+app.on('ready', async () => {
+  await initDatabase();
   registerIpcHandlers();
   createWindow();
 });
