@@ -55,6 +55,10 @@ function registerIpcHandlers(): void {
     );
     return dbGet('SELECT * FROM campaigns WHERE id = ?', [result.lastInsertRowid]);
   });
+
+  ipcMain.handle('campaign:delete', (_, id: number) => {
+    dbRun('DELETE FROM campaigns WHERE id = ?', [id]);
+  });
 }
 
 app.on('ready', async () => {

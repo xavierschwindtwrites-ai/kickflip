@@ -22,6 +22,7 @@ interface SidebarProps {
   activeCampaignId: number;
   onSelectCampaign: (id: number) => void;
   onNewCampaign: () => void;
+  onDeleteCampaign: (id: number, title: string) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -31,7 +32,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   activeCampaignId,
   onSelectCampaign,
   onNewCampaign,
+  onDeleteCampaign,
 }) => {
+  const canDelete = campaigns.length > 1;
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -51,6 +55,24 @@ const Sidebar: React.FC<SidebarProps> = ({
           >
             <span className={`campaign-dot${c.id === activeCampaignId ? ' active' : ''}`} />
             <span className="campaign-item-title">{c.title}</span>
+            {canDelete && (
+              <button
+                className="campaign-delete-btn"
+                title="Delete campaign"
+                onClick={e => {
+                  e.stopPropagation();
+                  onDeleteCampaign(c.id, c.title);
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -69,7 +91,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       <div className="sidebar-footer">
-        <span className="sidebar-version">v0.1.0</span>
+        <span className="sidebar-version">v0.1.1</span>
       </div>
     </aside>
   );

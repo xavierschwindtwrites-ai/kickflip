@@ -11,4 +11,6 @@ contextBridge.exposeInMainWorld('kickflip', {
     ipcRenderer.invoke('campaign:list'),
   createCampaign: (title: string, data: string) =>
     ipcRenderer.invoke('campaign:create', title, data),
+  deleteCampaign: (id: number) =>
+    ipcRenderer.invoke('campaign:delete', id),
 });

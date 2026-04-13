@@ -209,6 +209,99 @@ html, body, #root {
   cursor: default;
 }
 
+.modal-body {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.modal-btn-delete {
+  background: #dc2626;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.modal-btn-delete:hover {
+  background: #b91c1c;
+}
+
+.modal-btn-delete-final {
+  background: #b91c1c;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s, opacity 0.12s;
+}
+
+.modal-btn-delete-final:hover:not(:disabled) {
+  background: #991b1b;
+}
+
+.modal-btn-delete-final:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---- Campaign delete button ---- */
+.campaign-delete-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  margin-left: auto;
+  cursor: pointer;
+  color: #999;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.12s, background 0.12s;
+}
+
+.campaign-delete-btn:hover {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.campaign-item:hover .campaign-delete-btn {
+  display: flex;
+}
+
+/* ---- Empty state ---- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  gap: 12px;
+}
+
+.empty-state h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.empty-state p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
 /* Nav section */
 .sidebar-nav {
   flex: 1;

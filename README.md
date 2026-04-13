@@ -17,11 +17,19 @@ No account. No subscription. Your data stays on your computer.
 
 Get the latest release for Mac (.dmg) or Windows (.exe):
 
-**[Download KickFlip](https://github.com/xavierschwindt/kickflip/releases/latest)**
+**[Download KickFlip](https://github.com/xavierschwindtwrites-ai/kickflip/releases/latest)**
 
-### Mac installation note
+### Mac installation (first time only)
 
-First time opening on Mac: right-click the app icon, choose Open, then click Open in the dialog. You only need to do this once.
+1. Download and open the `.dmg`, drag KickFlip to Applications
+2. Try to open KickFlip — macOS will show a warning
+3. Open Terminal and run:
+   ```
+   xattr -cr /Applications/KickFlip.app
+   ```
+4. Double-click KickFlip — it opens normally from now on
+
+This is required because KickFlip is not yet code-signed with an Apple Developer certificate.
 
 ### Windows installation note
 
@@ -29,7 +37,7 @@ If Windows SmartScreen appears, click "More info" then "Run anyway."
 
 ## Development
 
-KickFlip is built with Electron, React, TypeScript, and better-sqlite3.
+KickFlip is built with Electron, React, TypeScript, and sql.js.
 
 ```bash
 # Install dependencies
