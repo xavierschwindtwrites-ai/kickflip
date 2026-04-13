@@ -209,6 +209,27 @@
     line-height: 1.7;
   }
 
+  .install-code {
+    display: block;
+    margin: 8px 0 4px;
+    padding: 10px 14px;
+    background: #1a1a1a;
+    color: #f0f0f0;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 13px;
+    border-radius: 6px;
+    user-select: all;
+    -webkit-user-select: all;
+    word-break: break-all;
+  }
+
+  .install-note {
+    margin-top: 14px;
+    font-size: 12px;
+    color: #999;
+    line-height: 1.55;
+  }
+
   /* ---- Community ---- */
   .community-content {
     max-width: 620px;
@@ -284,8 +305,8 @@
   </div>
 
   <p class="hero-note">
-    Mac: right-click the app and choose Open on first launch.<br>
-    Windows: click "More info" then "Run anyway" if prompted.
+    Mac: one terminal command required on first launch &mdash; instructions below.<br>
+    Windows: click &ldquo;More info&rdquo; then &ldquo;Run anyway&rdquo; if prompted.
   </p>
 </header>
 
@@ -346,10 +367,15 @@
       </h3>
       <ol>
         <li>Download the .dmg file</li>
-        <li>Open it and drag KickFlip to Applications</li>
-        <li>Right-click KickFlip and choose Open (first time only)</li>
-        <li>Start planning your campaign</li>
+        <li>Open it and drag KickFlip to your Applications folder</li>
+        <li>Try to open KickFlip &mdash; macOS will show a warning</li>
+        <li>Open Terminal (press Command + Space, type Terminal, hit Enter)</li>
+        <li>Paste this command and press Enter:
+          <div class="install-code">xattr -cr /Applications/KickFlip.app</div>
+        </li>
+        <li>Double-click KickFlip in Applications &mdash; it will open normally</li>
       </ol>
+      <p class="install-note">You only need to do this once. After this KickFlip opens normally every time. This is required because KickFlip is not yet code-signed with an Apple Developer certificate.</p>
     </div>
     <div class="install-card">
       <h3>
