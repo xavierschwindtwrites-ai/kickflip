@@ -31,7 +31,6 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
   const fadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialLoad = useRef(true);
 
-  // Load all data on mount
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -41,7 +40,12 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
         try {
           const parsed: CampaignData = JSON.parse(campaign.data);
           if (parsed.pricingTiers) {
-            setForm({ ...defaultPricingTiers(), ...parsed.pricingTiers });
+            const savedTiers = parsed.pricingTiers;
+            setForm({
+              ...defaultPricingTiers(),
+              ...savedTiers,
+              tiers: (savedTiers.tiers || []).map(t => ({ ...createRewardTier(), ...t })),
+            });
           }
           if (parsed.bookSetup) {
             setBookSetup({ ...DEFAULT_BOOK_SETUP, ...parsed.bookSetup });
@@ -56,7 +60,6 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
     return () => { cancelled = true; };
   }, [campaignId]);
 
-  // Debounced autosave
   useEffect(() => {
     if (isInitialLoad.current) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -81,7 +84,6 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
     };
   }, [form, campaignId]);
 
-  // Tier helpers
   const updateTier = useCallback((id: string, patch: Partial<RewardTier>) => {
     setForm(prev => ({
       ...prev,
@@ -112,14 +114,12 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
     }));
   }, []);
 
-  // Printer lookup helper
   const getPrinter = (id: string): PodPrinter | undefined =>
     podPrinters.find(p => p.id === id);
 
   const printerLabel = (p: PodPrinter): string =>
     p.printerName === 'Other' ? (p.customName || 'Other') : (p.printerName || 'Unnamed');
 
-  // Usable printers (ones with a cost entered)
   const usablePrinters = podPrinters.filter(p => p.unitCost !== null && p.unitCost > 0);
 
   // Goal warnings
@@ -136,9 +136,13 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
     );
   }
 
-  // Sanity check
-  const firstProfitableTier = form.tiers.find(t => {
+  // KF-009: Aggregate backer-count-to-goal across all profitable tiers
+  const profitableTiers = form.tiers.filter(t => {
     if (!t.pledgeAmount || t.pledgeAmount <= 0) return false;
+    if (t.isDigitalOnly) {
+      // Digital tiers: no print cost, no shipping — just check pledge > 0
+      return t.pledgeAmount * (1 - TOTAL_FEE) > 0;
+    }
     const printer = getPrinter(t.printerId);
     const unitCost = printer?.unitCost ?? 0;
     const domShip = printer?.domesticShipping ?? 0;
@@ -147,8 +151,16 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
   });
 
   let backersNeeded: number | null = null;
-  if (form.goal && form.goal > 0 && firstProfitableTier && firstProfitableTier.pledgeAmount) {
-    backersNeeded = Math.ceil(form.goal / firstProfitableTier.pledgeAmount);
+  let backersNote = '';
+  if (form.goal && form.goal > 0 && profitableTiers.length > 0) {
+    const equalWeight = 1 / profitableTiers.length;
+    const weightedAvgPledge = profitableTiers.reduce(
+      (sum, t) => sum + (t.pledgeAmount! * equalWeight), 0
+    );
+    backersNeeded = Math.ceil(form.goal / weightedAvgPledge);
+    if (profitableTiers.length > 1) {
+      backersNote = `Using equal weighting across ${profitableTiers.length} tiers. Customize distribution in Scenario Modeler.`;
+    }
   }
 
   return (
@@ -156,13 +168,12 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
       <div className="pt-header">
         <h1 className="pt-title">Pricing &amp; Tiers</h1>
         <span className={`save-indicator ${saveStatus}`}>
-          {saveStatus === 'saving' && 'Saving\u2026'}
-          {saveStatus === 'saved' && '\u2713 Saved'}
+          {saveStatus === 'saving' && 'Saving…'}
+          {saveStatus === 'saved' && '✓ Saved'}
         </span>
       </div>
 
       <div className="form-scroll">
-        {/* FEE EXPLAINER */}
         <div className="form-helper-block pt-fee-note" style={{ maxWidth: 640, marginBottom: 24 }}>
           <strong>Platform fees deducted from every pledge:</strong> Kickstarter 5% + Payment processing 3% = <strong>8% total</strong>.
           All margin calculations below already account for this.
@@ -215,16 +226,18 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
           <button className="add-btn" onClick={addTier}>+ Add Tier</button>
         </section>
 
-        {/* GOAL SANITY CHECK */}
+        {/* GOAL SANITY CHECK — KF-009: aggregate */}
         {form.goal !== null && form.goal > 0 && (
           <div className="pt-sanity-box" style={{ maxWidth: 640 }}>
-            {backersNeeded !== null && firstProfitableTier ? (
+            {backersNeeded !== null ? (
               <>
                 <p>
                   To hit your goal of <strong>${form.goal.toLocaleString()}</strong>, you need approximately{' '}
-                  <strong>{backersNeeded} backers</strong> at the{' '}
-                  <strong>{firstProfitableTier.name || `$${firstProfitableTier.pledgeAmount}`}</strong> tier.
+                  <strong>{backersNeeded} backers</strong> based on your active tiers.
                 </p>
+                {backersNote && (
+                  <p className="form-helper" style={{ marginTop: 4 }}>{backersNote}</p>
+                )}
                 {bookSetup.conservativeEstimate !== null && backersNeeded > bookSetup.conservativeEstimate && (
                   <p className="pt-sanity-flag">
                     That exceeds your conservative estimate of {bookSetup.conservativeEstimate} copies.
@@ -261,18 +274,18 @@ const TierCard: React.FC<TierCardProps> = ({
   tier, canRemove, printers, printerLabel, getPrinter,
   onUpdate, onRemove, onToggleInclude,
 }) => {
-  const printer = getPrinter(tier.printerId);
+  const isDigital = tier.isDigitalOnly ?? false;
+  const printer = isDigital ? undefined : getPrinter(tier.printerId);
   const pledge = tier.pledgeAmount ?? 0;
   const fees = Math.round(pledge * TOTAL_FEE * 100) / 100;
   const afterFees = Math.round((pledge - fees) * 100) / 100;
-  const printCost = printer?.unitCost ?? 0;
-  const domShip = printer?.domesticShipping ?? 0;
-  const intlShip = printer?.internationalShipping ?? 0;
+  const printCost = isDigital ? 0 : (printer?.unitCost ?? 0);
+  const domShip = isDigital ? 0 : (printer?.domesticShipping ?? 0);
+  const intlShip = isDigital ? 0 : (printer?.internationalShipping ?? 0);
   const netDomestic = Math.round((afterFees - printCost - domShip) * 100) / 100;
   const netIntl = Math.round((afterFees - printCost - intlShip) * 100) / 100;
-  const showMargin = pledge > 0 && printer;
+  const showMargin = pledge > 0 && (isDigital || printer);
 
-  // Validation
   const nameWarn = tier.name === '' ? 'Tier name is required' : undefined;
   const pledgeWarn = tier.pledgeAmount !== null && tier.pledgeAmount <= 0 ? 'Pledge must be greater than $0' : undefined;
 
@@ -310,6 +323,23 @@ const TierCard: React.FC<TierCardProps> = ({
         )}
       </div>
 
+      {/* KF-001: Digital-only toggle */}
+      <div className="form-field" style={{ marginTop: 8 }}>
+        <label className="pt-digital-toggle">
+          <input
+            type="checkbox"
+            checked={isDigital}
+            onChange={e => onUpdate(tier.id, {
+              isDigitalOnly: e.target.checked,
+              printerId: e.target.checked ? '' : tier.printerId,
+            })}
+          />
+          <span className="pt-digital-toggle-label">
+            Digital-only tier <span className="pt-digital-hint">(ebook, PDF, audiobook — no physical fulfillment)</span>
+          </span>
+        </label>
+      </div>
+
       {/* Includes checklist */}
       <div className="form-field" style={{ marginTop: 4 }}>
         <label className="form-label">What&apos;s included</label>
@@ -337,38 +367,46 @@ const TierCard: React.FC<TierCardProps> = ({
         )}
       </div>
 
-      {/* Printer + shipping */}
-      <div className="printer-card-costs" style={{ marginTop: 4 }}>
-        <div className="form-field" style={{ flex: 2 }}>
-          <label className="form-label">Print with</label>
-          {printers.length > 0 ? (
+      {/* Printer + shipping — only shown for physical tiers */}
+      {!isDigital && (
+        <div className="printer-card-costs" style={{ marginTop: 4 }}>
+          <div className="form-field" style={{ flex: 2 }}>
+            <label className="form-label">Print with</label>
+            {printers.length > 0 ? (
+              <select
+                className="form-input form-select"
+                value={tier.printerId}
+                onChange={e => onUpdate(tier.id, { printerId: e.target.value })}
+              >
+                <option value="">Select a printer</option>
+                {printers.map(p => (
+                  <option key={p.id} value={p.id}>{printerLabel(p)}</option>
+                ))}
+              </select>
+            ) : (
+              <span className="form-helper">No printers added yet — visit Printer Quotes first</span>
+            )}
+          </div>
+          <div className="form-field" style={{ flex: 1 }}>
+            <label className="form-label">Ships to</label>
             <select
               className="form-input form-select"
-              value={tier.printerId}
-              onChange={e => onUpdate(tier.id, { printerId: e.target.value })}
+              value={tier.shippingType}
+              onChange={e => onUpdate(tier.id, { shippingType: e.target.value as RewardTier['shippingType'] })}
             >
-              <option value="">Select a printer</option>
-              {printers.map(p => (
-                <option key={p.id} value={p.id}>{printerLabel(p)}</option>
-              ))}
+              <option value="domestic">Domestic only</option>
+              <option value="international">International</option>
+              <option value="both">Both</option>
             </select>
-          ) : (
-            <span className="form-helper">No printers added yet — visit Printer Quotes first</span>
-          )}
+          </div>
         </div>
-        <div className="form-field" style={{ flex: 1 }}>
-          <label className="form-label">Ships to</label>
-          <select
-            className="form-input form-select"
-            value={tier.shippingType}
-            onChange={e => onUpdate(tier.id, { shippingType: e.target.value as RewardTier['shippingType'] })}
-          >
-            <option value="domestic">Domestic only</option>
-            <option value="international">International</option>
-            <option value="both">Both</option>
-          </select>
+      )}
+
+      {isDigital && (
+        <div className="pt-digital-badge">
+          Digital delivery — $0 print cost, no shipping required
         </div>
-      </div>
+      )}
 
       {/* Margin breakdown */}
       {showMargin && (
@@ -381,57 +419,71 @@ const TierCard: React.FC<TierCardProps> = ({
             <span>Kickstarter + processing (8%)</span>
             <span>&minus; ${fees.toFixed(2)}</span>
           </div>
-          <div className="pt-margin-row pt-margin-deduct">
-            <span>Print cost ({printerLabel(printer)})</span>
-            <span>&minus; ${printCost.toFixed(2)}</span>
-          </div>
 
-          {(tier.shippingType === 'domestic' || tier.shippingType === 'both') && (
+          {!isDigital && printer && (
+            <div className="pt-margin-row pt-margin-deduct">
+              <span>Print cost ({printerLabel(printer)})</span>
+              <span>&minus; ${printCost.toFixed(2)}</span>
+            </div>
+          )}
+
+          {isDigital ? (
             <>
-              <div className="pt-margin-row pt-margin-deduct">
-                <span>Shipping — domestic</span>
-                <span>&minus; ${domShip.toFixed(2)}</span>
-              </div>
               <div className="pt-margin-divider" />
-              <div className={`pt-margin-row pt-margin-total ${netDomestic < 0 ? 'negative' : 'positive'}`}>
-                <span>Net margin (domestic)</span>
-                <span>${netDomestic.toFixed(2)}</span>
+              <div className="pt-margin-row pt-margin-total positive">
+                <span>Net margin (digital delivery)</span>
+                <span>${afterFees.toFixed(2)}</span>
               </div>
             </>
-          )}
-
-          {(tier.shippingType === 'international' || tier.shippingType === 'both') && (
+          ) : (
             <>
-              {tier.shippingType === 'both' && (
-                <div className="pt-margin-row pt-margin-deduct" style={{ marginTop: 6 }}>
-                  <span>Shipping — international</span>
-                  <span>&minus; ${intlShip.toFixed(2)}</span>
-                </div>
+              {(tier.shippingType === 'domestic' || tier.shippingType === 'both') && (
+                <>
+                  <div className="pt-margin-row pt-margin-deduct">
+                    <span>Shipping — domestic</span>
+                    <span>&minus; ${domShip.toFixed(2)}</span>
+                  </div>
+                  <div className="pt-margin-divider" />
+                  <div className={`pt-margin-row pt-margin-total ${netDomestic < 0 ? 'negative' : 'positive'}`}>
+                    <span>Net margin (domestic)</span>
+                    <span>${netDomestic.toFixed(2)}</span>
+                  </div>
+                </>
               )}
-              {tier.shippingType === 'international' && (
-                <div className="pt-margin-row pt-margin-deduct">
-                  <span>Shipping — international</span>
-                  <span>&minus; ${intlShip.toFixed(2)}</span>
-                </div>
-              )}
-              {tier.shippingType === 'international' && <div className="pt-margin-divider" />}
-              <div className={`pt-margin-row pt-margin-total ${netIntl < 0 ? 'negative' : 'positive'}`}>
-                <span>Net margin (int&apos;l)</span>
-                <span>${netIntl.toFixed(2)}</span>
-              </div>
-            </>
-          )}
 
-          {/* Warnings */}
-          {(netDomestic < 0 || netIntl < 0) && (
-            <div className="pt-margin-alert pt-margin-alert--red">
-              This tier loses money. Increase the pledge amount or choose a cheaper printer.
-            </div>
-          )}
-          {netDomestic >= 0 && netIntl >= 0 && (netDomestic < 2 || netIntl < 2) && (
-            <div className="pt-margin-alert pt-margin-alert--orange">
-              Thin margin. Consider adding $2–3 to this pledge.
-            </div>
+              {(tier.shippingType === 'international' || tier.shippingType === 'both') && (
+                <>
+                  {tier.shippingType === 'both' && (
+                    <div className="pt-margin-row pt-margin-deduct" style={{ marginTop: 6 }}>
+                      <span>Shipping — international</span>
+                      <span>&minus; ${intlShip.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {tier.shippingType === 'international' && (
+                    <div className="pt-margin-row pt-margin-deduct">
+                      <span>Shipping — international</span>
+                      <span>&minus; ${intlShip.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {tier.shippingType === 'international' && <div className="pt-margin-divider" />}
+                  <div className={`pt-margin-row pt-margin-total ${netIntl < 0 ? 'negative' : 'positive'}`}>
+                    <span>Net margin (int&apos;l)</span>
+                    <span>${netIntl.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
+
+              {(netDomestic < 0 || netIntl < 0) && (
+                <div className="pt-margin-alert pt-margin-alert--red">
+                  This tier loses money. Increase the pledge amount or choose a cheaper printer.
+                </div>
+              )}
+              {netDomestic >= 0 && netIntl >= 0 && (netDomestic < 2 || netIntl < 2) && (
+                <div className="pt-margin-alert pt-margin-alert--orange">
+                  Thin margin. Consider adding $2–3 to this pledge.
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

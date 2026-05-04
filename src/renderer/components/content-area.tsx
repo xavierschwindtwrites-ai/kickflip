@@ -10,6 +10,8 @@ import StretchGoals from './stretch-goals';
 import PromotionalTools from './promotional-tools';
 import FulfillmentPlanner from './fulfillment-planner';
 import Retrospective from './retrospective';
+import PrelaunchTracker from './pre-launch-tracker';
+import LiveTracker from './live-tracker';
 
 interface ContentAreaProps {
   activeNav: NavItem;
@@ -94,6 +96,22 @@ const ContentArea: React.FC<ContentAreaProps> = ({ activeNav, campaignId, onNavC
     return (
       <main className="content-area content-area--form">
         <Retrospective campaignId={campaignId} />
+      </main>
+    );
+  }
+
+  if (activeNav === 'Pre-launch Tracker') {
+    return (
+      <main className="content-area content-area--form">
+        <PrelaunchTracker campaignId={campaignId} />
+      </main>
+    );
+  }
+
+  if (activeNav === 'Live Tracker') {
+    return (
+      <main className="content-area content-area--form">
+        <LiveTracker campaignId={campaignId} />
       </main>
     );
   }

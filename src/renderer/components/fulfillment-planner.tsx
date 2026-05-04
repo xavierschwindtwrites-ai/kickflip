@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type {
   CampaignData,
   FulfillmentPlannerData,
+  FulfillmentPrinterEntry,
   BookSetupData,
   PrinterQuotesData,
   PromotionalToolsData,
@@ -9,6 +10,7 @@ import type {
 } from '../../types/campaign';
 import {
   defaultFulfillmentPlanner,
+  createFulfillmentPrinterEntry,
   DEFAULT_BOOK_SETUP,
   defaultPrinterQuotes,
   defaultPromotionalTools,
@@ -33,13 +35,13 @@ function addDays(iso: string, days: number): string {
 }
 
 const BACKER_COMMS = [
-  { key: 'thankYou', label: 'Campaign funded \u2014 send thank you update', timing: 'Day 0 after campaign ends', dateKey: 'endDate' as const },
-  { key: 'pmOpen', label: 'Pledge manager open \u2014 notify all backers', timing: 'Week 1\u20132', dateKey: 'pledgeManagerOpenDate' as const },
-  { key: 'pmClosing', label: 'Pledge manager closing soon \u2014 reminder email', timing: '3 days before close', dateKey: 'pledgeManagerCloseDate' as const },
-  { key: 'filesSubmitted', label: 'Files submitted to printer \u2014 update backers', timing: 'On submission date', dateKey: 'printFileSubmissionDate' as const },
-  { key: 'printDone', label: 'Printing complete \u2014 update backers', timing: 'On completion date', dateKey: 'expectedPrintCompletionDate' as const },
-  { key: 'shippingBegun', label: 'Shipping has begun \u2014 update backers with tracking info plan', timing: 'On shipping start', dateKey: 'shippingStartDate' as const },
-  { key: 'fulfilled', label: 'Fulfillment complete \u2014 final thank you update', timing: 'On completion', dateKey: 'estimatedFulfillmentCompleteDate' as const },
+  { key: 'thankYou', label: 'Campaign funded — send thank you update', timing: 'Day 0 after campaign ends', dateKey: 'endDate' as const },
+  { key: 'pmOpen', label: 'Pledge manager open — notify all backers', timing: 'Week 1–2', dateKey: 'pledgeManagerOpenDate' as const },
+  { key: 'pmClosing', label: 'Pledge manager closing soon — reminder email', timing: '3 days before close', dateKey: 'pledgeManagerCloseDate' as const },
+  { key: 'filesSubmitted', label: 'Files submitted to printer — update backers', timing: 'On submission date', dateKey: 'printFileSubmissionDate' as const },
+  { key: 'printDone', label: 'Printing complete — update backers', timing: 'On completion date', dateKey: 'expectedPrintCompletionDate' as const },
+  { key: 'shippingBegun', label: 'Shipping has begun — update backers with tracking info plan', timing: 'On shipping start', dateKey: 'shippingStartDate' as const },
+  { key: 'fulfilled', label: 'Fulfillment complete — final thank you update', timing: 'On completion', dateKey: 'estimatedFulfillmentCompleteDate' as const },
 ];
 
 const HIDDEN_COSTS = [
@@ -54,7 +56,7 @@ const HIDDEN_COSTS = [
 ];
 
 const PLATFORM_HELPERS: Record<PledgeManagerPlatform, string> = {
-  'Backerkit': 'Most popular. ~$0.50\u20131.00 per backer + % of add-on revenue. Best for complex add-ons.',
+  'Backerkit': 'Most popular. ~$0.50–1.00 per backer + % of add-on revenue. Best for complex add-ons.',
   'Crowdox': 'Good for simpler campaigns. Flat monthly fee model.',
   'Kickstarter native': 'Free but limited. No add-ons, no address collection flexibility.',
   'Other': '',
@@ -84,6 +86,12 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
               ...defaultFulfillmentPlanner(),
               ...saved,
               timeline: { ...defaultFulfillmentPlanner().timeline, ...saved.timeline },
+              // KF-012: migrate legacy single printer to printerEntries if needed
+              printerEntries: saved.printerEntries && saved.printerEntries.length > 0
+                ? saved.printerEntries
+                : (saved.confirmedPrinterId
+                    ? [{ ...createFulfillmentPrinterEntry(), printerId: saved.confirmedPrinterId, estimatedUnitCost: null }]
+                    : [createFulfillmentPrinterEntry()]),
             });
           }
           if (p.bookSetup) setBookSetup({ ...DEFAULT_BOOK_SETUP, ...p.bookSetup });
@@ -146,31 +154,42 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
     });
   }, []);
 
-  // --- Derived data ---
+  // KF-012: Printer entry helpers
+  const updatePrinterEntry = useCallback((id: string, patch: Partial<FulfillmentPrinterEntry>) => {
+    setForm(prev => ({
+      ...prev,
+      printerEntries: prev.printerEntries.map(e => e.id === id ? { ...e, ...patch } : e),
+    }));
+  }, []);
+
+  const addPrinterEntry = useCallback(() => {
+    setForm(prev => ({
+      ...prev,
+      printerEntries: [...prev.printerEntries, createFulfillmentPrinterEntry()],
+    }));
+  }, []);
+
+  const removePrinterEntry = useCallback((id: string) => {
+    setForm(prev => ({
+      ...prev,
+      printerEntries: prev.printerEntries.length > 1
+        ? prev.printerEntries.filter(e => e.id !== id)
+        : prev.printerEntries,
+    }));
+  }, []);
+
+  // Derived data
   const launchDate = bookSetup.targetLaunchDate;
-  const campaignLength = promoTools.campaignLength;
+  let campaignLength = promoTools.campaignLength;
+  if (promoTools.useEndDateOverride && promoTools.overrideEndDate && launchDate) {
+    const launch = new Date(launchDate + 'T00:00:00');
+    const end = new Date(promoTools.overrideEndDate + 'T00:00:00');
+    const diff = Math.round((end.getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff > 0) campaignLength = diff;
+  }
   const campaignEndDate = launchDate ? addDays(launchDate, campaignLength) : '';
 
-  // Crossover calc (same as shipping-planner)
-  const firstPod = printerQuotes.podPrinters.find(p => p.unitCost !== null && p.unitCost > 0);
-  const firstOffset = printerQuotes.offsetPrinters.find(o => o.volumeRows.some(r => r.quantity && r.unitCost));
-  let crossoverCopies: number | null = null;
-
-  if (firstPod && firstOffset) {
-    const podUnit = firstPod.unitCost!;
-    const lowestRow = firstOffset.volumeRows
-      .filter(r => r.quantity && r.unitCost)
-      .sort((a, b) => (a.quantity ?? 0) - (b.quantity ?? 0))[0];
-    if (lowestRow && lowestRow.unitCost !== null && lowestRow.quantity !== null) {
-      const offsetUnit = lowestRow.unitCost;
-      if (podUnit > offsetUnit) {
-        const offsetTotal = lowestRow.totalCost ?? (lowestRow.quantity * offsetUnit);
-        crossoverCopies = Math.ceil(offsetTotal / (podUnit - offsetUnit));
-      }
-    }
-  }
-
-  // Build printer dropdown options
+  // Build printer lookup
   const allPrinters: { id: string; label: string; type: 'pod' | 'offset' }[] = [];
   printerQuotes.podPrinters.forEach(p => {
     const name = p.printerName === 'Other' ? (p.customName || 'Other POD') : (p.printerName || 'Unnamed POD');
@@ -181,29 +200,28 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
     allPrinters.push({ id: p.id, label: `${name} (Offset)`, type: 'offset' });
   });
 
-  const selectedPrinter = allPrinters.find(p => p.id === form.confirmedPrinterId);
-  const printQty = form.printQuantity ?? 0;
+  // KF-012: Aggregate fulfillment cost
+  const totalFulfillmentCost = (form.printerEntries || []).reduce((sum, e) => {
+    const qty = form.printQuantity ?? 0;
+    const unit = e.estimatedUnitCost ?? 0;
+    return sum + (qty * unit);
+  }, 0);
 
-  // Crossover advice
-  let crossoverAdvice = '';
-  let crossoverColor: 'green' | 'orange' | '' = '';
-  if (crossoverCopies !== null && printQty > 0 && selectedPrinter) {
-    if (selectedPrinter.type === 'pod' && printQty >= crossoverCopies) {
-      crossoverAdvice = `Based on your quotes, offset becomes cost-effective at ${crossoverCopies.toLocaleString()} copies. Your planned quantity is ${printQty.toLocaleString()}. You might save money with offset printing.`;
-      crossoverColor = 'orange';
-    } else if (selectedPrinter.type === 'pod' && printQty < crossoverCopies) {
-      crossoverAdvice = `Based on your quotes, offset becomes cost-effective at ${crossoverCopies.toLocaleString()} copies. Your planned quantity of ${printQty.toLocaleString()} is below that \u2014 POD is the right call.`;
-      crossoverColor = 'green';
-    } else if (selectedPrinter.type === 'offset' && printQty >= crossoverCopies) {
-      crossoverAdvice = `Based on your quotes, offset becomes cost-effective at ${crossoverCopies.toLocaleString()} copies. Your planned quantity of ${printQty.toLocaleString()} is above that \u2014 offset is the right call.`;
-      crossoverColor = 'green';
-    } else if (selectedPrinter.type === 'offset' && printQty < crossoverCopies) {
-      crossoverAdvice = `Based on your quotes, offset becomes cost-effective at ${crossoverCopies.toLocaleString()} copies. Your planned quantity is only ${printQty.toLocaleString()}. POD might be cheaper at this volume.`;
-      crossoverColor = 'orange';
+  // Crossover calc
+  const firstPod = printerQuotes.podPrinters.find(p => p.unitCost !== null && p.unitCost > 0);
+  const firstOffset = printerQuotes.offsetPrinters.find(o => o.volumeRows.some(r => r.quantity && r.unitCost));
+  let crossoverCopies: number | null = null;
+  if (firstPod && firstOffset) {
+    const podUnit = firstPod.unitCost!;
+    const lowestRow = firstOffset.volumeRows
+      .filter(r => r.quantity && r.unitCost)
+      .sort((a, b) => (a.quantity ?? 0) - (b.quantity ?? 0))[0];
+    if (lowestRow && lowestRow.unitCost !== null && lowestRow.quantity !== null && podUnit > lowestRow.unitCost) {
+      const offsetTotal = lowestRow.totalCost ?? (lowestRow.quantity * lowestRow.unitCost);
+      crossoverCopies = Math.ceil(offsetTotal / (podUnit - lowestRow.unitCost));
     }
   }
 
-  // Validation warnings
   const tl = form.timeline;
   const warnings: Record<string, string> = {};
   if (tl.pledgeManagerCloseDate && tl.pledgeManagerOpenDate && tl.pledgeManagerCloseDate <= tl.pledgeManagerOpenDate) {
@@ -216,7 +234,6 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
     warnings.shippingStartDate = 'Shipping start should be after print completion';
   }
 
-  // Timeline milestones for visual
   const timelineMilestones = [
     { label: 'Campaign ends', date: campaignEndDate, set: !!campaignEndDate },
     { label: 'Pledge manager opens', date: tl.pledgeManagerOpenDate, set: !!tl.pledgeManagerOpenDate },
@@ -227,7 +244,6 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
     { label: 'All orders shipped', date: tl.estimatedFulfillmentCompleteDate, set: !!tl.estimatedFulfillmentCompleteDate },
   ];
 
-  // Resolve suggested date for backer comms
   const getCommDate = (dateKey: string): string => {
     if (dateKey === 'endDate') return campaignEndDate;
     if (dateKey === 'pledgeManagerCloseDate' && tl.pledgeManagerCloseDate) {
@@ -244,8 +260,8 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
       <div className="fp-header">
         <h1 className="fp-title">Fulfillment Planner</h1>
         <span className={`save-indicator ${saveStatus}`}>
-          {saveStatus === 'saving' && 'Saving\u2026'}
-          {saveStatus === 'saved' && '\u2713 Saved'}
+          {saveStatus === 'saving' && 'Saving…'}
+          {saveStatus === 'saved' && '✓ Saved'}
         </span>
       </div>
 
@@ -255,7 +271,6 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
           <h2 className="form-section-label">Fulfillment Timeline</h2>
 
           <div className="fp-timeline-layout">
-            {/* Visual timeline */}
             <div className="fp-timeline-visual">
               <div className="pt-timeline">
                 <div className="pt-timeline-line" />
@@ -273,7 +288,6 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
               </div>
             </div>
 
-            {/* Date inputs */}
             <div className="fp-timeline-inputs">
               <div className="form-field">
                 <label className="form-label">Campaign end date</label>
@@ -289,103 +303,50 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
 
               <div className="form-field">
                 <label className="form-label">When will you open your pledge manager?</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={tl.pledgeManagerOpenDate}
-                  onChange={e => updateTimeline('pledgeManagerOpenDate', e.target.value)}
-                />
-                <span className="form-helper">Typically 1{'\u2013'}2 weeks after campaign ends</span>
+                <input type="date" className="form-input" value={tl.pledgeManagerOpenDate} onChange={e => updateTimeline('pledgeManagerOpenDate', e.target.value)} />
+                <span className="form-helper">Typically 1–2 weeks after campaign ends</span>
               </div>
 
               <div className="form-field">
                 <label className="form-label">Pledge manager deadline for backers</label>
-                <input
-                  type="date"
-                  className={`form-input${warnings.pledgeManagerCloseDate ? ' input-warn' : ''}`}
-                  value={tl.pledgeManagerCloseDate}
-                  onChange={e => updateTimeline('pledgeManagerCloseDate', e.target.value)}
-                />
-                {warnings.pledgeManagerCloseDate && (
-                  <span className="form-warning">{warnings.pledgeManagerCloseDate}</span>
-                )}
+                <input type="date" className={`form-input${warnings.pledgeManagerCloseDate ? ' input-warn' : ''}`} value={tl.pledgeManagerCloseDate} onChange={e => updateTimeline('pledgeManagerCloseDate', e.target.value)} />
+                {warnings.pledgeManagerCloseDate && <span className="form-warning">{warnings.pledgeManagerCloseDate}</span>}
               </div>
 
               <div className="form-field">
                 <label className="form-label">When will you submit final files to printer?</label>
-                <input
-                  type="date"
-                  className={`form-input${warnings.printFileSubmissionDate ? ' input-warn' : ''}`}
-                  value={tl.printFileSubmissionDate}
-                  onChange={e => updateTimeline('printFileSubmissionDate', e.target.value)}
-                />
-                {warnings.printFileSubmissionDate && (
-                  <span className="form-warning">{warnings.printFileSubmissionDate}</span>
-                )}
+                <input type="date" className={`form-input${warnings.printFileSubmissionDate ? ' input-warn' : ''}`} value={tl.printFileSubmissionDate} onChange={e => updateTimeline('printFileSubmissionDate', e.target.value)} />
+                {warnings.printFileSubmissionDate && <span className="form-warning">{warnings.printFileSubmissionDate}</span>}
               </div>
 
               <div className="form-field">
                 <label className="form-label">Printer&apos;s estimated completion date</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={tl.expectedPrintCompletionDate}
-                  onChange={e => updateTimeline('expectedPrintCompletionDate', e.target.value)}
-                />
+                <input type="date" className="form-input" value={tl.expectedPrintCompletionDate} onChange={e => updateTimeline('expectedPrintCompletionDate', e.target.value)} />
               </div>
 
               <div className="form-field">
                 <label className="form-label">When do you plan to start shipping?</label>
-                <input
-                  type="date"
-                  className={`form-input${warnings.shippingStartDate ? ' input-warn' : ''}`}
-                  value={tl.shippingStartDate}
-                  onChange={e => updateTimeline('shippingStartDate', e.target.value)}
-                />
-                {warnings.shippingStartDate && (
-                  <span className="form-warning">{warnings.shippingStartDate}</span>
-                )}
+                <input type="date" className={`form-input${warnings.shippingStartDate ? ' input-warn' : ''}`} value={tl.shippingStartDate} onChange={e => updateTimeline('shippingStartDate', e.target.value)} />
+                {warnings.shippingStartDate && <span className="form-warning">{warnings.shippingStartDate}</span>}
               </div>
 
               <div className="form-field">
                 <label className="form-label">When do you expect all orders shipped?</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={tl.estimatedFulfillmentCompleteDate}
-                  onChange={e => updateTimeline('estimatedFulfillmentCompleteDate', e.target.value)}
-                />
+                <input type="date" className="form-input" value={tl.estimatedFulfillmentCompleteDate} onChange={e => updateTimeline('estimatedFulfillmentCompleteDate', e.target.value)} />
               </div>
             </div>
           </div>
         </section>
 
-        {/* 2. PRINTER DECISION */}
+        {/* 2. KF-012: Multi-printer fulfillment section */}
         <section className="form-section">
-          <h2 className="form-section-label">Confirmed Print Strategy</h2>
+          <h2 className="form-section-label">Fulfillment Printers</h2>
+          <p className="form-helper" style={{ marginBottom: 12 }}>
+            Add one printer entry per printer you&rsquo;ll use. For simple campaigns with one printer, one entry is all you need.
+          </p>
 
-          <div className="form-field">
-            <label className="form-label">Which printer will you use for fulfillment?</label>
-            <select
-              className="form-input"
-              value={form.confirmedPrinterId}
-              onChange={e => setForm(prev => ({ ...prev, confirmedPrinterId: e.target.value }))}
-            >
-              <option value="">Select a printer</option>
-              {allPrinters.map(p => (
-                <option key={p.id} value={p.id}>{p.label}</option>
-              ))}
-            </select>
-            {allPrinters.length === 0 && (
-              <span className="form-helper">
-                No printers entered yet.{' '}
-                <button className="pt-link-btn" onClick={() => onNavChange('Printer Quotes')}>Add in Printer Quotes</button>
-              </span>
-            )}
-          </div>
-
-          <div className="form-field">
-            <label className="form-label">Print quantity</label>
+          <div className="form-field" style={{ maxWidth: 200, marginBottom: 16 }}>
+            <label className="form-label">Total print quantity</label>
             <input
               type="number"
               className="form-input"
@@ -394,13 +355,112 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
               placeholder="e.g. 500"
               min={0}
               step={1}
-              style={{ maxWidth: 200 }}
             />
           </div>
 
-          {crossoverAdvice && (
-            <div className={`fp-crossover-note ${crossoverColor}`}>
-              {crossoverAdvice}
+          {(form.printerEntries || []).map((entry, idx) => (
+            <div key={entry.id} className="printer-card fp-printer-entry">
+              <div className="printer-card-top">
+                <div className="fp-printer-entry-title">Printer {idx + 1}</div>
+                {(form.printerEntries || []).length > 1 && (
+                  <button className="remove-btn" onClick={() => removePrinterEntry(entry.id)} title="Remove printer">&times;</button>
+                )}
+              </div>
+
+              <div className="printer-card-costs fp-printer-entry-fields">
+                <div className="form-field" style={{ flex: 2 }}>
+                  <label className="form-label">Printer</label>
+                  <select
+                    className="form-input"
+                    value={entry.printerId}
+                    onChange={e => updatePrinterEntry(entry.id, { printerId: e.target.value })}
+                  >
+                    <option value="">Select a printer</option>
+                    {allPrinters.map(p => (
+                      <option key={p.id} value={p.id}>{p.label}</option>
+                    ))}
+                  </select>
+                  {allPrinters.length === 0 && (
+                    <span className="form-helper">
+                      <button className="pt-link-btn" onClick={() => onNavChange('Printer Quotes')}>Add printers in Printer Quotes</button>
+                    </span>
+                  )}
+                </div>
+
+                <div className="form-field" style={{ flex: 1 }}>
+                  <label className="form-label">Unit cost ($)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={entry.estimatedUnitCost ?? ''}
+                    onChange={e => updatePrinterEntry(entry.id, { estimatedUnitCost: e.target.value === '' ? null : Number(e.target.value) })}
+                    placeholder="0.00"
+                    min={0}
+                    step={0.01}
+                  />
+                </div>
+
+                <div className="form-field" style={{ flex: 1 }}>
+                  <label className="form-label">Turnaround (weeks)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={entry.turnaroundWeeks ?? ''}
+                    onChange={e => updatePrinterEntry(entry.id, { turnaroundWeeks: e.target.value === '' ? null : Number(e.target.value) })}
+                    placeholder="4"
+                    min={1}
+                    step={1}
+                  />
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label className="form-label">Tiers / items this printer fulfills</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={entry.tiersFullfilled}
+                  onChange={e => updatePrinterEntry(entry.id, { tiersFullfilled: e.target.value })}
+                  placeholder="e.g. Paperback tier, Signed edition"
+                />
+              </div>
+
+              <div className="form-field">
+                <label className="form-label">Notes</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={entry.notes}
+                  onChange={e => updatePrinterEntry(entry.id, { notes: e.target.value })}
+                  placeholder="Any special instructions or reminders"
+                />
+              </div>
+
+              {entry.estimatedUnitCost !== null && (form.printQuantity ?? 0) > 0 && (
+                <div className="fp-printer-cost-line">
+                  Estimated cost: <strong>${((entry.estimatedUnitCost ?? 0) * (form.printQuantity ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                  {' '}({form.printQuantity?.toLocaleString()} copies × ${entry.estimatedUnitCost.toFixed(2)}/unit)
+                </div>
+              )}
+            </div>
+          ))}
+
+          <button className="add-btn" onClick={addPrinterEntry}>+ Add Another Printer</button>
+
+          {(form.printerEntries || []).length > 1 && (form.printQuantity ?? 0) > 0 && (
+            <div className="fp-total-cost-box">
+              <span>Total estimated fulfillment cost across all printers:</span>
+              <strong>${totalFulfillmentCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+            </div>
+          )}
+
+          {/* Crossover advice (kept for single-printer guidance) */}
+          {crossoverCopies !== null && (form.printerEntries || []).length === 1 && (form.printQuantity ?? 0) > 0 && (
+            <div className={`fp-crossover-note ${(form.printQuantity ?? 0) >= crossoverCopies ? 'orange' : 'green'}`}>
+              {(form.printQuantity ?? 0) >= crossoverCopies
+                ? `Offset becomes cost-effective at ${crossoverCopies.toLocaleString()} copies. Your planned quantity of ${(form.printQuantity ?? 0).toLocaleString()} is above that — consider offset printing.`
+                : `Offset becomes cost-effective at ${crossoverCopies.toLocaleString()} copies. Your planned quantity of ${(form.printQuantity ?? 0).toLocaleString()} is below that — POD is the right call.`
+              }
             </div>
           )}
         </section>
@@ -413,21 +473,11 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
             <label className="form-label">Will you use a pledge manager?</label>
             <div className="radio-group">
               <label className={`radio-option${form.usePledgeManager === true ? ' active' : ''}`}>
-                <input
-                  type="radio"
-                  name="usePM"
-                  checked={form.usePledgeManager === true}
-                  onChange={() => setForm(prev => ({ ...prev, usePledgeManager: true }))}
-                />
+                <input type="radio" name="usePM" checked={form.usePledgeManager === true} onChange={() => setForm(prev => ({ ...prev, usePledgeManager: true }))} />
                 Yes
               </label>
               <label className={`radio-option${form.usePledgeManager === false ? ' active' : ''}`}>
-                <input
-                  type="radio"
-                  name="usePM"
-                  checked={form.usePledgeManager === false}
-                  onChange={() => setForm(prev => ({ ...prev, usePledgeManager: false }))}
-                />
+                <input type="radio" name="usePM" checked={form.usePledgeManager === false} onChange={() => setForm(prev => ({ ...prev, usePledgeManager: false }))} />
                 No
               </label>
             </div>
@@ -467,21 +517,11 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
                   />
                   <div className="radio-group">
                     <label className={`radio-option${form.pledgeManagerFeeType === 'percent' ? ' active' : ''}`}>
-                      <input
-                        type="radio"
-                        name="feeType"
-                        checked={form.pledgeManagerFeeType === 'percent'}
-                        onChange={() => setForm(prev => ({ ...prev, pledgeManagerFeeType: 'percent' }))}
-                      />
+                      <input type="radio" name="feeType" checked={form.pledgeManagerFeeType === 'percent'} onChange={() => setForm(prev => ({ ...prev, pledgeManagerFeeType: 'percent' }))} />
                       %
                     </label>
                     <label className={`radio-option${form.pledgeManagerFeeType === 'flat' ? ' active' : ''}`}>
-                      <input
-                        type="radio"
-                        name="feeType"
-                        checked={form.pledgeManagerFeeType === 'flat'}
-                        onChange={() => setForm(prev => ({ ...prev, pledgeManagerFeeType: 'flat' }))}
-                      />
+                      <input type="radio" name="feeType" checked={form.pledgeManagerFeeType === 'flat'} onChange={() => setForm(prev => ({ ...prev, pledgeManagerFeeType: 'flat' }))} />
                       Flat ($)
                     </label>
                   </div>
@@ -504,16 +544,11 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
                   <span className={`pt-checkbox${checked ? ' checked' : ''}`}>
                     {checked && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </span>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleBackerComm(item.key)}
-                    className="pt-check-hidden"
-                  />
+                  <input type="checkbox" checked={checked} onChange={() => toggleBackerComm(item.key)} className="pt-check-hidden" />
                   <div className="pt-check-content">
                     <span className="pt-check-label">{item.label}</span>
                     <span className="pt-check-helper">
-                      {suggestedDate ? `${item.timing} \u2014 ${formatDate(suggestedDate)}` : item.timing}
+                      {suggestedDate ? `${item.timing} — ${formatDate(suggestedDate)}` : item.timing}
                     </span>
                   </div>
                 </label>
@@ -541,12 +576,7 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
                     <span className={`pt-checkbox${checked ? ' checked' : ''}`}>
                       {checked && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     </span>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleHiddenCost(item.key)}
-                      className="pt-check-hidden"
-                    />
+                    <input type="checkbox" checked={checked} onChange={() => toggleHiddenCost(item.key)} className="pt-check-hidden" />
                     <div className="pt-check-content">
                       <span className="pt-check-label">{item.label}</span>
                     </div>

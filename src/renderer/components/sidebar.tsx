@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { NavItem, CampaignListItem } from '../app';
 import Logo from './logo';
 
@@ -13,6 +13,8 @@ const NAV_ITEMS: NavItem[] = [
   'Promotional Tools',
   'Fulfillment Planner',
   'Retrospective',
+  'Pre-launch Tracker',
+  'Live Tracker',
 ];
 
 interface SidebarProps {
@@ -23,6 +25,8 @@ interface SidebarProps {
   onSelectCampaign: (id: number) => void;
   onNewCampaign: () => void;
   onDeleteCampaign: (id: number, title: string) => void;
+  onRenameCampaign: (id: number, newTitle: string) => void;
+  onDuplicateCampaign: (id: number) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -33,8 +37,53 @@ const Sidebar: React.FC<SidebarProps> = ({
   onSelectCampaign,
   onNewCampaign,
   onDeleteCampaign,
+  onRenameCampaign,
+  onDuplicateCampaign,
 }) => {
-  const canDelete = campaigns.length > 1;
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openMenuId]);
+
+  // Focus rename input when it appears
+  useEffect(() => {
+    if (renamingId !== null && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingId]);
+
+  const startRename = useCallback((c: CampaignListItem) => {
+    setOpenMenuId(null);
+    setRenamingId(c.id);
+    setRenameValue(c.title);
+  }, []);
+
+  const commitRename = useCallback(async () => {
+    if (renamingId !== null && renameValue.trim()) {
+      await onRenameCampaign(renamingId, renameValue.trim());
+    }
+    setRenamingId(null);
+    setRenameValue('');
+  }, [renamingId, renameValue, onRenameCampaign]);
+
+  const cancelRename = useCallback(() => {
+    setRenamingId(null);
+    setRenameValue('');
+  }, []);
 
   return (
     <aside className="sidebar">
@@ -51,28 +100,77 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div
             key={c.id}
             className={`campaign-item${c.id === activeCampaignId ? ' active' : ''}`}
-            onClick={() => onSelectCampaign(c.id)}
+            onClick={() => {
+              if (renamingId !== c.id) onSelectCampaign(c.id);
+            }}
           >
             <span className={`campaign-dot${c.id === activeCampaignId ? ' active' : ''}`} />
-            <span className="campaign-item-title">{c.title}</span>
-            {canDelete && (
+
+            {renamingId === c.id ? (
+              <input
+                ref={renameInputRef}
+                className="campaign-rename-input"
+                value={renameValue}
+                onChange={e => setRenameValue(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') commitRename();
+                  if (e.key === 'Escape') cancelRename();
+                }}
+                onClick={e => e.stopPropagation()}
+              />
+            ) : (
+              <span className="campaign-item-title">{c.title}</span>
+            )}
+
+            <div className="campaign-menu-wrap" ref={openMenuId === c.id ? menuRef : undefined}>
               <button
-                className="campaign-delete-btn"
-                title="Delete campaign"
+                className="campaign-menu-btn"
+                title="Campaign options"
                 onClick={e => {
                   e.stopPropagation();
-                  onDeleteCampaign(c.id, c.title);
+                  setOpenMenuId(openMenuId === c.id ? null : c.id);
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                  <path d="M10 11v6" />
-                  <path d="M14 11v6" />
-                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="5" r="2"/>
+                  <circle cx="12" cy="12" r="2"/>
+                  <circle cx="12" cy="19" r="2"/>
                 </svg>
               </button>
-            )}
+
+              {openMenuId === c.id && (
+                <div className="campaign-dropdown">
+                  <button
+                    className="campaign-dropdown-item"
+                    onClick={e => { e.stopPropagation(); startRename(c); }}
+                  >
+                    Rename
+                  </button>
+                  <button
+                    className="campaign-dropdown-item"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setOpenMenuId(null);
+                      onDuplicateCampaign(c.id);
+                    }}
+                  >
+                    Duplicate
+                  </button>
+                  <div className="campaign-dropdown-divider" />
+                  <button
+                    className="campaign-dropdown-item campaign-dropdown-item--danger"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setOpenMenuId(null);
+                      onDeleteCampaign(c.id, c.title);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -91,7 +189,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       <div className="sidebar-footer">
-        <span className="sidebar-version">v0.1.1</span>
+        <span className="sidebar-version">v0.2.0</span>
       </div>
     </aside>
   );

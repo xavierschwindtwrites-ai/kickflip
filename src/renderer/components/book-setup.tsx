@@ -240,18 +240,36 @@ const BookSetup: React.FC<BookSetupProps> = ({ campaignId }) => {
             />
           </Field>
 
-          <Field label="Trim size">
-            <select
-              className="form-input form-select"
-              value={form.trimSize}
-              onChange={handleText('trimSize')}
-            >
-              <option value="">Select a trim size</option>
-              {TRIM_SIZES.map(s => (
-                <option key={s} value={s}>{s}&quot;</option>
-              ))}
-            </select>
-          </Field>
+          {/* KF-006: Per-format trim sizes */}
+          {(form.coverType === 'paperback' || form.coverType === 'both') && (
+            <Field label={form.coverType === 'both' ? 'Trim size — Paperback' : 'Trim size'}>
+              <select
+                className="form-input form-select"
+                value={form.trimSizePaperback || form.trimSize}
+                onChange={e => updateField('trimSizePaperback', e.target.value)}
+              >
+                <option value="">Select a trim size</option>
+                {TRIM_SIZES.map(s => (
+                  <option key={s} value={s}>{s}&quot;</option>
+                ))}
+              </select>
+            </Field>
+          )}
+
+          {(form.coverType === 'hardcover' || form.coverType === 'both') && (
+            <Field label={form.coverType === 'both' ? 'Trim size — Hardcover' : 'Trim size'}>
+              <select
+                className="form-input form-select"
+                value={form.trimSizeHardcover || form.trimSize}
+                onChange={e => updateField('trimSizeHardcover', e.target.value)}
+              >
+                <option value="">Select a trim size</option>
+                {TRIM_SIZES.map(s => (
+                  <option key={s} value={s}>{s}&quot;</option>
+                ))}
+              </select>
+            </Field>
+          )}
 
           <RadioGroup
             label="Interior"

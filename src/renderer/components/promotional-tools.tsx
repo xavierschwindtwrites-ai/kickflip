@@ -170,7 +170,16 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
       if (campaign && campaign.data) {
         try {
           const p: CampaignData = JSON.parse(campaign.data);
-          if (p.promotionalTools) setForm({ ...defaultPromotionalTools(), ...p.promotionalTools });
+          if (p.promotionalTools) {
+            const saved = p.promotionalTools;
+            setForm({
+              ...defaultPromotionalTools(),
+              ...saved,
+              campaignLength: saved.campaignLength ?? 30,
+              useEndDateOverride: saved.useEndDateOverride ?? false,
+              overrideEndDate: saved.overrideEndDate ?? '',
+            });
+          }
           if (p.bookSetup) setBookSetup({ ...DEFAULT_BOOK_SETUP, ...p.bookSetup });
         } catch { /* */ }
       }
@@ -248,9 +257,21 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
     setTimeout(() => setCopiedIdx(null), 2000);
   }, []);
 
-  // --- Campaign timeline ---
+  // --- Campaign timeline --- KF-005: end date override
   const launchDate = bookSetup.targetLaunchDate;
-  const campaignLength = form.campaignLength;
+
+  // Calculate effective campaign length and end date
+  let campaignLength = form.campaignLength ?? 30;
+  let effectiveEndDate = '';
+  if (form.useEndDateOverride && form.overrideEndDate && launchDate) {
+    const launch = new Date(launchDate + 'T00:00:00');
+    const end = new Date(form.overrideEndDate + 'T00:00:00');
+    const diffDays = Math.round((end.getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
+    campaignLength = diffDays > 0 ? diffDays : 1;
+    effectiveEndDate = form.overrideEndDate;
+  } else if (launchDate) {
+    effectiveEndDate = addDays(launchDate, campaignLength);
+  }
 
   const milestones = launchDate ? [
     { label: 'Launch day', date: launchDate, dayNum: 0 },
@@ -258,7 +279,7 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
     { label: 'Stretch goal tease', date: addDays(launchDate, 7), dayNum: 7 },
     { label: 'Midpoint community post', date: addDays(launchDate, Math.floor(campaignLength / 2)), dayNum: Math.floor(campaignLength / 2) },
     { label: 'Last push email', date: addDays(launchDate, campaignLength - 2), dayNum: campaignLength - 2 },
-    { label: 'Campaign ends', date: addDays(launchDate, campaignLength), dayNum: campaignLength },
+    { label: 'Campaign ends', date: effectiveEndDate || addDays(launchDate, campaignLength), dayNum: campaignLength },
   ] : [];
 
   return (
@@ -335,19 +356,59 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
 
           <div className="pt-timing-grid">
             <div className="form-field">
-              <label className="form-label">Campaign length</label>
-              <select
-                className="form-input"
-                value={campaignLength}
-                onChange={e => setForm(prev => ({ ...prev, campaignLength: Number(e.target.value) as 20 | 25 | 30 }))}
-              >
-                <option value={20}>20 days</option>
-                <option value={25}>25 days</option>
-                <option value={30}>30 days</option>
-              </select>
-              <span className="form-helper">
-                Shorter campaigns create urgency. 30 days is standard for books. Avoid launching on major US holidays.
-              </span>
+              {!form.useEndDateOverride ? (
+                <>
+                  <label className="form-label">Campaign length</label>
+                  <select
+                    className="form-input"
+                    value={form.campaignLength}
+                    onChange={e => setForm(prev => ({ ...prev, campaignLength: Number(e.target.value) }))}
+                  >
+                    <option value={20}>20 days</option>
+                    <option value={25}>25 days</option>
+                    <option value={30}>30 days</option>
+                  </select>
+                  <span className="form-helper">
+                    Shorter campaigns create urgency. 30 days is standard for books.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <label className="form-label">Specific end date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={form.overrideEndDate}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setForm(prev => ({ ...prev, overrideEndDate: val }));
+                    }}
+                  />
+                  {launchDate && form.overrideEndDate && (
+                    <span className="form-helper">
+                      {campaignLength > 0
+                        ? `${campaignLength} day campaign`
+                        : 'End date must be after launch date'}
+                    </span>
+                  )}
+                </>
+              )}
+
+              {/* KF-005: Override toggle */}
+              <label className="pt-override-toggle" style={{ marginTop: 10 }}>
+                <input
+                  type="checkbox"
+                  checked={!!form.useEndDateOverride}
+                  onChange={e => setForm(prev => ({
+                    ...prev,
+                    useEndDateOverride: e.target.checked,
+                    overrideEndDate: e.target.checked && launchDate ? addDays(launchDate, prev.campaignLength) : '',
+                  }))}
+                />
+                <span style={{ marginLeft: 8, fontSize: 13 }}>
+                  Override with a specific end date
+                </span>
+              </label>
             </div>
 
             <div className="form-field">

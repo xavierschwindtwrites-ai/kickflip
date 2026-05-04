@@ -12,6 +12,8 @@ interface KickflipAPI {
   listCampaigns(): Promise<CampaignListItem[]>;
   createCampaign(title: string, data: string): Promise<Campaign>;
   deleteCampaign(id: number): Promise<void>;
+  renameCampaign(id: number, newTitle: string): Promise<void>;
+  duplicateCampaign(id: number): Promise<Campaign | null>;
 }
 
 declare global {

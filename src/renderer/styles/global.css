@@ -3301,3 +3301,683 @@ html, body, #root {
   flex-shrink: 0;
   line-height: 1;
 }
+
+/* ================================================================
+   v0.2.0 additions
+   ================================================================ */
+
+/* ---- Shared form additions ---- */
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.form-label-hint {
+  font-weight: 400;
+  font-size: 12px;
+  color: #8c8c94;
+}
+
+/* ---- KF-004: Campaign ⋮ menu ---- */
+
+.campaign-menu-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.campaign-menu-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #8c8c94;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.1s, background 0.1s;
+  padding: 0;
+  line-height: 1;
+}
+
+.campaign-item:hover .campaign-menu-btn,
+.campaign-item.active .campaign-menu-btn {
+  opacity: 1;
+}
+
+.campaign-menu-btn:hover {
+  background: #e0e0e4;
+  color: #1a1a1a;
+}
+
+.campaign-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  z-index: 200;
+  background: #ffffff;
+  border: 1px solid #dcdce0;
+  border-radius: 7px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  min-width: 148px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.campaign-dropdown-item {
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+  border: none;
+  background: transparent;
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+
+.campaign-dropdown-item:hover {
+  background: #f0f0f4;
+}
+
+.campaign-dropdown-divider {
+  height: 1px;
+  background: #e8e8eb;
+  margin: 3px 0;
+}
+
+.campaign-dropdown-item--danger {
+  color: #c4402a;
+}
+
+.campaign-dropdown-item--danger:hover {
+  background: rgba(196, 64, 42, 0.06);
+}
+
+.campaign-rename-input {
+  width: 100%;
+  padding: 3px 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1px solid #E8622A;
+  border-radius: 4px;
+  outline: none;
+  color: #1a1a1a;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(232, 98, 42, 0.15);
+}
+
+/* ---- KF-001: Digital-only tiers ---- */
+
+.pt-digital-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 4px;
+}
+
+.pt-digital-toggle input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  accent-color: #E8622A;
+  cursor: pointer;
+}
+
+.pt-digital-toggle-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.pt-digital-hint {
+  display: block;
+  font-size: 12px;
+  color: #8c8c94;
+  margin-top: 2px;
+  margin-left: 23px;
+}
+
+.pt-digital-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(52, 168, 83, 0.08);
+  border: 1px solid rgba(52, 168, 83, 0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a7d3a;
+}
+
+/* ---- KF-005: End-date override toggle ---- */
+
+.pt-override-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pt-override-toggle input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #E8622A;
+  cursor: pointer;
+}
+
+.pt-override-toggle span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+/* ---- KF-002: Stretch goal drag handle ---- */
+
+.sg-drag-handle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: grab;
+  color: #b0b0b8;
+  padding: 0;
+  transition: color 0.12s, background 0.12s;
+  touch-action: none;
+}
+
+.sg-drag-handle:hover {
+  color: #6b6b73;
+  background: #f0f0f4;
+}
+
+.sg-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* ---- KF-010: Scenario Modeler tier weights & breakdown ---- */
+
+.sm-tier-weights {
+  background: #f7f7f8;
+  border: 1px solid #e8e8eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.sm-tier-weight-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.sm-tier-weight-row:last-of-type {
+  margin-bottom: 0;
+}
+
+.sm-tier-weight-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sm-tier-weight-input {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.sm-tier-weight-pct {
+  font-size: 12px;
+  color: #8c8c94;
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.sm-tier-weight-effective {
+  font-size: 12px;
+  color: #8c8c94;
+  width: 52px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.sm-tier-weights-footer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e8e8eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sm-tier-weights-total {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.sm-tier-weights-total.sm-tier-weights-total--warn {
+  color: #c4402a;
+}
+
+.sm-tier-breakdown {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e8e8eb;
+}
+
+.sm-tier-breakdown-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #8c8c94;
+  margin-bottom: 6px;
+}
+
+.sm-tier-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #3a3a3a;
+  padding: 2px 0;
+}
+
+/* ---- KF-012: Multi-printer fulfillment entries ---- */
+
+.fp-printer-entry {
+  background: #f7f7f8;
+  border: 1px solid #e8e8eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.fp-printer-entry-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.fp-printer-entry-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.fp-printer-cost-line {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e8e8eb;
+  font-size: 13px;
+  color: #3a3a3a;
+  display: flex;
+  justify-content: space-between;
+}
+
+.fp-printer-cost-line strong {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.fp-total-cost-box {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: rgba(232, 98, 42, 0.06);
+  border: 1px solid rgba(232, 98, 42, 0.2);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.fp-total-cost-box strong {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* ---- KF-013: Pre-launch Tracker ---- */
+
+.plt-progress-wrap {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.plt-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #e8e8eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.plt-progress-fill {
+  height: 100%;
+  background: #E8622A;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.plt-progress-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.plt-estimate-box {
+  margin-top: 10px;
+  padding: 14px 16px;
+  background: rgba(232, 98, 42, 0.06);
+  border: 1px solid rgba(232, 98, 42, 0.18);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plt-estimate-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #8c8c94;
+}
+
+.plt-estimate-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #E8622A;
+  line-height: 1.2;
+}
+
+.plt-estimate-basis {
+  font-size: 12px;
+  color: #8c8c94;
+}
+
+.plt-scenario-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plt-scenario-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid #e8e8eb;
+  border-radius: 7px;
+  background: #fafafb;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.plt-scenario-row--met {
+  border-color: rgba(52, 168, 83, 0.3);
+  background: rgba(52, 168, 83, 0.05);
+}
+
+.plt-scenario-label {
+  font-weight: 600;
+  color: #1a1a1a;
+  min-width: 90px;
+}
+
+.plt-scenario-backers {
+  color: #3a3a3a;
+}
+
+.plt-scenario-followers {
+  color: #6b6b73;
+  margin-left: auto;
+}
+
+.plt-scenario-check {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a7d3a;
+  white-space: nowrap;
+}
+
+/* ---- KF-014: Live Campaign Tracker ---- */
+
+.lt-active-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.lt-active-toggle input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #E8622A;
+  cursor: pointer;
+}
+
+.lt-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .lt-hero-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.lt-stat {
+  padding: 14px 14px 12px;
+  border: 1px solid #e8e8eb;
+  border-radius: 8px;
+  background: #fafafb;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.lt-stat--good {
+  border-color: rgba(52, 168, 83, 0.25);
+  background: rgba(52, 168, 83, 0.05);
+}
+
+.lt-stat--warn {
+  border-color: rgba(196, 64, 42, 0.25);
+  background: rgba(196, 64, 42, 0.04);
+}
+
+.lt-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+.lt-stat--good .lt-stat-value {
+  color: #1a7d3a;
+}
+
+.lt-stat--warn .lt-stat-value {
+  color: #c4402a;
+}
+
+.lt-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #8c8c94;
+}
+
+.lt-stat-sub {
+  font-size: 11px;
+  color: #6b6b73;
+  margin-top: 2px;
+}
+
+.lt-chart-wrap {
+  overflow-x: auto;
+}
+
+.lt-chart {
+  width: 100%;
+  max-width: 560px;
+  display: block;
+}
+
+.lt-chart-grid {
+  stroke: #eeeef0;
+  stroke-width: 1;
+}
+
+.lt-chart-tick {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  fill: #8c8c94;
+  text-anchor: end;
+}
+
+.lt-chart-goal-line {
+  stroke: rgba(52, 168, 83, 0.6);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.lt-chart-goal-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  fill: #1a7d3a;
+}
+
+.lt-chart-line {
+  stroke: #E8622A;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.lt-chart-dot {
+  fill: #E8622A;
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+.lt-chart-x-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  fill: #8c8c94;
+  text-anchor: middle;
+}
+
+.lt-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 10px;
+}
+
+.lt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.lt-table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #8c8c94;
+  border-bottom: 1px solid #e8e8eb;
+}
+
+.lt-table td {
+  padding: 5px 10px;
+  border-bottom: 1px solid #f0f0f4;
+  vertical-align: middle;
+}
+
+.lt-table td:last-child {
+  width: 36px;
+  padding-right: 4px;
+}
+
+.lt-add-btn {
+  margin-top: 6px;
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px solid #d8d8de;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3a3a3a;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.lt-add-btn:hover {
+  border-color: #E8622A;
+  color: #E8622A;
+  background: rgba(232, 98, 42, 0.04);
+}
+
+.lt-remove-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #b0b0b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.1s, background 0.1s;
+}
+
+.lt-remove-btn:hover {
+  color: #c4402a;
+  background: rgba(196, 64, 42, 0.06);
+}

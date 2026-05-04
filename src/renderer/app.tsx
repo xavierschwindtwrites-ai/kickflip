@@ -15,7 +15,9 @@ export type NavItem =
   | 'Stretch Goals'
   | 'Promotional Tools'
   | 'Fulfillment Planner'
-  | 'Retrospective';
+  | 'Retrospective'
+  | 'Pre-launch Tracker'
+  | 'Live Tracker';
 
 export interface CampaignListItem {
   id: number;
@@ -72,6 +74,20 @@ const App: React.FC = () => {
     }
   }, [refreshCampaigns, campaignId]);
 
+  const handleRenameCampaign = useCallback(async (id: number, newTitle: string) => {
+    await window.kickflip.renameCampaign(id, newTitle);
+    await refreshCampaigns();
+  }, [refreshCampaigns]);
+
+  const handleDuplicateCampaign = useCallback(async (id: number) => {
+    const newCampaign = await window.kickflip.duplicateCampaign(id);
+    if (newCampaign) {
+      await refreshCampaigns();
+      setCampaignId(newCampaign.id);
+      setActiveNav('Dashboard');
+    }
+  }, [refreshCampaigns]);
+
   // No campaigns — prompt to create one
   if (campaignId === null && campaigns.length === 0) {
     return (
@@ -107,6 +123,8 @@ const App: React.FC = () => {
         onSelectCampaign={handleSelectCampaign}
         onNewCampaign={() => setShowNewModal(true)}
         onDeleteCampaign={handleDeleteCampaign}
+        onRenameCampaign={handleRenameCampaign}
+        onDuplicateCampaign={handleDuplicateCampaign}
       />
       <ContentArea activeNav={activeNav} campaignId={campaignId} onNavChange={setActiveNav} />
       {showNewModal && (

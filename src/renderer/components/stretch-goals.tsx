@@ -1,4 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import type {
   CampaignData,
   StretchGoalsData,
@@ -35,19 +52,19 @@ const GOAL_TYPES: StretchGoalType[] = [
 
 const COST_HINTS: Record<string, string> = {
   'Interior illustrations':
-    'A typical chapter header commission from an indie artist runs $50\u2013200 per illustration. For 10 chapters that\u2019s $500\u20132,000 total.',
+    'A typical chapter header commission from an indie artist runs $50–200 per illustration. For 10 chapters that’s $500–2,000 total.',
   'Cover upgrade':
-    'Foil stamping setup fees typically run $300\u2013800 depending on the printer. Special edition covers with new art may cost $500\u20131,500.',
+    'Foil stamping setup fees typically run $300–800 depending on the printer. Special edition covers with new art may cost $500–1,500.',
   'Additional book format':
-    'Adding a hardcover edition to a paperback campaign typically adds $4\u20138 per unit in print costs.',
+    'Adding a hardcover edition to a paperback campaign typically adds $4–8 per unit in print costs.',
   'Bookmarks / bookplates':
-    'Printing 500 bookmarks typically costs $80\u2013150 at Sticker Mule or similar. Bookplates run about the same.',
+    'Printing 500 bookmarks typically costs $80–150 at Sticker Mule or similar. Bookplates run about the same.',
   'Art print':
-    'A print run of 200 signed art prints typically costs $200\u2013400 depending on size and paper stock.',
+    'A print run of 200 signed art prints typically costs $200–400 depending on size and paper stock.',
   'Author note / letter':
-    'A one-page author letter insert adds roughly $0.10\u20130.30 per copy in printing costs.',
+    'A one-page author letter insert adds roughly $0.10–0.30 per copy in printing costs.',
   'Ebook extras':
-    'Digital extras (bonus chapters, maps, art) have near-zero marginal cost \u2014 the main expense is creation time.',
+    'Digital extras (bonus chapters, maps, art) have near-zero marginal cost — the main expense is creation time.',
 };
 
 const fmtDollar = (n: number): string =>
@@ -69,7 +86,11 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
   const fadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialLoad = useRef(true);
 
-  /* ---------- load ---------- */
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -78,7 +99,15 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
       if (campaign && campaign.data) {
         try {
           const p: CampaignData = JSON.parse(campaign.data);
-          if (p.stretchGoals) setForm({ ...defaultStretchGoals(), ...p.stretchGoals });
+          if (p.stretchGoals) {
+            const goals = (p.stretchGoals.goals || []).map((g, idx) => ({
+              ...createStretchGoal(),
+              ...g,
+              sortOrder: g.sortOrder ?? idx,
+            }));
+            goals.sort((a, b) => a.sortOrder - b.sortOrder);
+            setForm({ goals });
+          }
           if (p.bookSetup) setBookSetup({ ...DEFAULT_BOOK_SETUP, ...p.bookSetup });
           if (p.pricingTiers) setPricingTiers(p.pricingTiers);
           if (p.printerQuotes) setPrinterQuotes(p.printerQuotes);
@@ -91,7 +120,6 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
     return () => { cancelled = true; };
   }, [campaignId]);
 
-  /* ---------- autosave ---------- */
   useEffect(() => {
     if (isInitialLoad.current) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -114,7 +142,6 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
     };
   }, [form, campaignId]);
 
-  /* ---------- helpers ---------- */
   const updateGoal = useCallback((id: string, patch: Partial<StretchGoal>) => {
     setForm(prev => ({
       ...prev,
@@ -123,17 +150,34 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
   }, []);
 
   const addGoal = useCallback(() => {
-    setForm(prev => ({ ...prev, goals: [...prev.goals, createStretchGoal()] }));
+    setForm(prev => {
+      const maxOrder = prev.goals.reduce((m, g) => Math.max(m, g.sortOrder ?? 0), -1);
+      return { ...prev, goals: [...prev.goals, { ...createStretchGoal(), sortOrder: maxOrder + 1 }] };
+    });
   }, []);
 
   const removeGoal = useCallback((id: string) => {
     setForm(prev => ({ ...prev, goals: prev.goals.filter(g => g.id !== id) }));
   }, []);
 
-  /* ---------- cross-screen data ---------- */
-  const campaignGoal = pricingTiers.goal ?? 0;
+  // KF-002: Handle drag end — reorder and update sortOrder
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setForm(prev => {
+        const oldIdx = prev.goals.findIndex(g => g.id === active.id);
+        const newIdx = prev.goals.findIndex(g => g.id === over.id);
+        const reordered = arrayMove(prev.goals, oldIdx, newIdx).map((g, idx) => ({
+          ...g,
+          sortOrder: idx,
+        }));
+        return { ...prev, goals: reordered };
+      });
+    }
+  }, []);
 
-  // Average net margin per backer across tiers with positive margins
+  /* Cross-screen data */
+  const campaignGoal = pricingTiers.goal ?? 0;
   const enabledRegions = shippingPlanner.regions.filter(r => r.enabled);
   const avgShippingCost = enabledRegions.reduce((sum, r) =>
     sum + ((r.backerPercent ?? 0) / 100) * (r.costPerCopy ?? 0), 0);
@@ -142,9 +186,11 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
   const tierMargins = pricingTiers.tiers
     .filter(t => (t.pledgeAmount ?? 0) > 0)
     .map(t => {
+      const isDigital = t.isDigitalOnly ?? false;
       const printer = printerQuotes.podPrinters.find(p => p.id === t.printerId);
-      const pCost = printer?.unitCost ?? 0;
-      const net = (t.pledgeAmount! * (1 - TOTAL_FEE)) - pCost - avgShippingCost - (t.pledgeAmount! * bufferRate);
+      const pCost = isDigital ? 0 : (printer?.unitCost ?? 0);
+      const shipCost = isDigital ? 0 : avgShippingCost;
+      const net = (t.pledgeAmount! * (1 - TOTAL_FEE)) - pCost - shipCost - (t.pledgeAmount! * bufferRate);
       return net;
     });
 
@@ -153,7 +199,6 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
     ? positiveTierMargins.reduce((a, b) => a + b, 0) / positiveTierMargins.length
     : 0;
 
-  // Best guess pledge amount for backer count estimates
   const bestTier = pricingTiers.tiers.find(t => (t.pledgeAmount ?? 0) > 0);
   const pledgeAmount = bestTier?.pledgeAmount ?? 0;
 
@@ -162,12 +207,11 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
   const breakoutFunding = breakoutBackers * pledgeAmount;
   const campaignLength = promoTools.campaignLength ?? 30;
 
-  /* ---------- per-goal analysis ---------- */
+  /* Per-goal analysis */
   const goalAnalysis = form.goals.map((goal, idx) => {
     const isFlat = goal.costStructure === 'flat';
     const cost = isFlat ? (goal.flatCost ?? 0) : (goal.perBackerCost ?? 0);
 
-    // Safe unlock threshold
     let safeThreshold = 0;
     let additionalBackers = 0;
     if (isFlat && avgNetPerBacker > 0) {
@@ -175,23 +219,15 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
       safeThreshold = campaignGoal + (additionalFundingNeeded * pledgeAmount);
       additionalBackers = Math.ceil(additionalFundingNeeded);
     } else if (!isFlat && pledgeAmount > 0) {
-      // Per-backer: need enough margin to absorb the added cost
-      // threshold is where new margin (avgNet - perBackerCost) still covers base
       const newNet = avgNetPerBacker - cost;
-      if (newNet > 0) {
-        safeThreshold = campaignGoal; // affordable from goal
-      } else {
-        safeThreshold = 0; // can't be covered
-      }
+      safeThreshold = newNet > 0 ? campaignGoal : 0;
       additionalBackers = 0;
     }
     safeThreshold = Math.round(safeThreshold);
 
-    // Profit buffer check
     let marginAfter = avgNetPerBacker;
     if (isFlat) {
       const backerEstimate = expectedBackers > 0 ? expectedBackers : (pledgeAmount > 0 ? Math.floor(campaignGoal / pledgeAmount) : 0);
-      // cumulative flat costs up to this goal
       let cumulativeFlat = 0;
       for (let i = 0; i <= idx; i++) {
         if (form.goals[i].costStructure === 'flat') cumulativeFlat += (form.goals[i].flatCost ?? 0);
@@ -199,7 +235,6 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
       }
       if (backerEstimate > 0) marginAfter -= cumulativeFlat / backerEstimate;
     } else {
-      // cumulative per-backer + flat spread
       const backerEstimate = expectedBackers > 0 ? expectedBackers : (pledgeAmount > 0 ? Math.floor(campaignGoal / pledgeAmount) : 0);
       let cumulativeFlat = 0;
       for (let i = 0; i <= idx; i++) {
@@ -209,12 +244,10 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
       if (backerEstimate > 0) marginAfter -= cumulativeFlat / backerEstimate;
     }
 
-    // Margin warning level
     let marginLevel: 'ok' | 'thin' | 'negative' = 'ok';
     if (marginAfter < 0) marginLevel = 'negative';
     else if (marginAfter < 3) marginLevel = 'thin';
 
-    // Timing recommendation
     let timingText = '';
     if (safeThreshold > 0 && campaignGoal > 0) {
       const expectedFunding = expectedBackers * pledgeAmount;
@@ -234,7 +267,7 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
     };
   });
 
-  /* ---------- recommended thresholds ---------- */
+  /* Recommended thresholds */
   const rec1 = Math.round(campaignGoal * 1.5);
   const rec2 = Math.round(campaignGoal * 2);
   const rec3 = Math.round(campaignGoal * 3);
@@ -245,22 +278,38 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
     return (backers - goalBackers) * avgNetPerBacker;
   };
 
-  /* ---------- health check ---------- */
+  /* Health check */
   const totalStretchCosts = form.goals.reduce((sum, g) => {
     if (g.costStructure === 'flat') return sum + (g.flatCost ?? 0);
     return sum + ((g.perBackerCost ?? 0) * expectedBackers);
   }, 0);
 
-  const sortedThresholds = goalAnalysis
-    .map(a => a.safeThreshold)
-    .filter(t => t > 0)
-    .sort((a, b) => a - b);
+  // KF-003: Keep analysis paired with threshold for proximity warning
+  const sortedAnalysis = [...goalAnalysis]
+    .filter(a => a.safeThreshold > 0)
+    .sort((a, b) => a.safeThreshold - b.safeThreshold);
 
-  // Spacing check: flag if two goals within $200
+  const sortedThresholds = sortedAnalysis.map(a => a.safeThreshold);
+
+  // KF-003: Proximity warnings — suppress when both goals are 'Funded by threshold'
   const spacingIssues: string[] = [];
-  for (let i = 1; i < sortedThresholds.length; i++) {
-    if (sortedThresholds[i] - sortedThresholds[i - 1] < 200) {
-      spacingIssues.push(`Goals at ${fmtDollar(sortedThresholds[i - 1])} and ${fmtDollar(sortedThresholds[i])} are within $200 of each other`);
+  for (let i = 1; i < sortedAnalysis.length; i++) {
+    const prev = sortedAnalysis[i - 1];
+    const curr = sortedAnalysis[i];
+    if (curr.safeThreshold - prev.safeThreshold < 200) {
+      const prevFunded = prev.marginLevel === 'ok';
+      const currFunded = curr.marginLevel === 'ok';
+      if (prevFunded && currFunded) {
+        // Both goals are funded by their threshold — spacing warning suppressed
+      } else if (prevFunded || currFunded) {
+        spacingIssues.push(
+          `Goals at ${fmtDollar(prev.safeThreshold)} and ${fmtDollar(curr.safeThreshold)} are within $200 — one uses threshold funding, but consider whether backers will feel momentum.`
+        );
+      } else {
+        spacingIssues.push(
+          `Goals at ${fmtDollar(prev.safeThreshold)} and ${fmtDollar(curr.safeThreshold)} are within $200 of each other — too close, backers won’t feel momentum.`
+        );
+      }
     }
   }
 
@@ -276,12 +325,11 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
     ladderLabel = 'Some goals are too close together';
   }
 
-  /* ---------- funding bar helpers ---------- */
   const maxFunding = Math.max(
     breakoutFunding,
     campaignGoal * 3,
     ...sortedThresholds,
-    1, // prevent 0
+    1,
   );
 
   const barPercent = (val: number): number => Math.min(100, Math.max(0, (val / maxFunding) * 100));
@@ -291,17 +339,22 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
       <div className="sg-header">
         <h1 className="sg-title">Stretch Goals</h1>
         <span className={`save-indicator ${saveStatus}`}>
-          {saveStatus === 'saving' && 'Saving\u2026'}
-          {saveStatus === 'saved' && '\u2713 Saved'}
+          {saveStatus === 'saving' && 'Saving…'}
+          {saveStatus === 'saved' && '✓ Saved'}
         </span>
       </div>
 
       <div className="form-scroll">
-        {/* ============ SECTION 1: STRETCH GOAL BUILDER ============ */}
+        {/* SECTION 1: STRETCH GOAL BUILDER with DnD */}
         <section className="form-section">
           <h2 className="form-section-label">Stretch Goal Builder</h2>
           <p className="form-helper" style={{ marginBottom: 16 }}>
             Enter what each goal costs to produce. KickFlip will calculate the safe unlock threshold and check your margins.
+            {form.goals.length > 1 && (
+              <span style={{ display: 'block', marginTop: 4 }}>
+                Drag the <span style={{ fontWeight: 600 }}>☰</span> handle to reorder.
+              </span>
+            )}
           </p>
 
           {form.goals.length === 0 && (
@@ -316,221 +369,52 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
             </div>
           )}
 
-          {form.goals.map((goal, idx) => {
-            const analysis = goalAnalysis[idx];
-            const hasCost = analysis.isFlat ? (goal.flatCost ?? 0) > 0 : (goal.perBackerCost ?? 0) > 0;
-            const showOutputs = hasCost && avgNetPerBacker > 0 && campaignGoal > 0;
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={form.goals.map(g => g.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {form.goals.map((goal, idx) => {
+                const analysis = goalAnalysis[idx];
+                const hasCost = analysis.isFlat ? (goal.flatCost ?? 0) > 0 : (goal.perBackerCost ?? 0) > 0;
+                const showOutputs = hasCost && avgNetPerBacker > 0 && campaignGoal > 0;
 
-            return (
-              <div key={goal.id} className="printer-card sg-card">
-                <div className="printer-card-top">
-                  <div className="printer-card-fields">
-                    <div className="form-field" style={{ flex: 2 }}>
-                      <label className="form-label">Goal name</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={goal.name}
-                        onChange={e => updateGoal(goal.id, { name: e.target.value })}
-                        placeholder="e.g. Illustrated chapter headers"
-                      />
-                    </div>
-                    <div className="form-field" style={{ flex: 1 }}>
-                      <label className="form-label">Goal type</label>
-                      <select
-                        className="form-input"
-                        value={goal.goalType}
-                        onChange={e => updateGoal(goal.id, { goalType: e.target.value as StretchGoalType })}
-                      >
-                        {GOAL_TYPES.map(t => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <button className="remove-btn" onClick={() => removeGoal(goal.id)} title="Remove">&times;</button>
-                </div>
-
-                {/* Custom type input */}
-                {goal.goalType === 'Custom' && (
-                  <div className="form-field" style={{ marginTop: 8 }}>
-                    <label className="form-label">Custom type</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={goal.customType}
-                      onChange={e => updateGoal(goal.id, { customType: e.target.value })}
-                      placeholder="Describe your stretch goal type"
-                    />
-                  </div>
-                )}
-
-                {/* Cost hint */}
-                {COST_HINTS[goal.goalType] && (
-                  <div className="sg-cost-hint">
-                    {COST_HINTS[goal.goalType]}
-                  </div>
-                )}
-
-                {/* Cost structure */}
-                <div className="printer-card-costs" style={{ marginTop: 8 }}>
-                  <div className="form-field" style={{ flex: 1 }}>
-                    <label className="form-label">Cost structure</label>
-                    <div className="radio-group">
-                      <label className={`radio-option${goal.costStructure === 'flat' ? ' active' : ''}`}>
-                        <input
-                          type="radio"
-                          name={`costStruct-${goal.id}`}
-                          checked={goal.costStructure === 'flat'}
-                          onChange={() => updateGoal(goal.id, { costStructure: 'flat' })}
-                        />
-                        One-time flat cost
-                      </label>
-                      <label className={`radio-option${goal.costStructure === 'per_backer' ? ' active' : ''}`}>
-                        <input
-                          type="radio"
-                          name={`costStruct-${goal.id}`}
-                          checked={goal.costStructure === 'per_backer'}
-                          onChange={() => updateGoal(goal.id, { costStructure: 'per_backer' })}
-                        />
-                        Per-backer cost
-                      </label>
-                    </div>
-                  </div>
-                  <div className="form-field" style={{ flex: 1 }}>
-                    {goal.costStructure === 'flat' ? (
-                      <>
-                        <label className="form-label">Total cost to produce ($)</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={goal.flatCost ?? ''}
-                          onChange={e => updateGoal(goal.id, { flatCost: e.target.value === '' ? null : Number(e.target.value) })}
-                          placeholder="e.g. 1200"
-                          min={0}
-                          step={1}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <label className="form-label">Added cost per backer ($)</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={goal.perBackerCost ?? ''}
-                          onChange={e => updateGoal(goal.id, { perBackerCost: e.target.value === '' ? null : Number(e.target.value) })}
-                          placeholder="e.g. 2.50"
-                          min={0}
-                          step={0.01}
-                        />
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* ---- CALCULATED OUTPUTS ---- */}
-                {showOutputs && (
-                  <div className="sg-outputs">
-                    {/* 1. Safe Unlock Threshold */}
-                    <div className="sg-output-row">
-                      <div className="sg-output-label">Safe Unlock Threshold</div>
-                      {analysis.isFlat && analysis.safeThreshold > 0 ? (
-                        <div className="sg-output-value">
-                          <strong>{fmtDollar(analysis.safeThreshold)}</strong> in funding
-                          <span className="sg-output-detail">
-                            {analysis.additionalBackers > 0 && ` (~${analysis.additionalBackers} backers beyond your base goal)`}
-                          </span>
-                        </div>
-                      ) : !analysis.isFlat && avgNetPerBacker > analysis.cost ? (
-                        <div className="sg-output-value">
-                          <strong>Affordable from your base goal</strong>
-                          <span className="sg-output-detail"> (margin absorbs the per-backer cost)</span>
-                        </div>
-                      ) : (
-                        <div className="sg-output-value sg-output-warn-red">
-                          This cost exceeds your per-backer margin. Reduce the cost or raise your prices.
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 2. Profit Buffer Check */}
-                    <div className="sg-output-row">
-                      <div className="sg-output-label">Profit Buffer Check</div>
-                      <div className="sg-output-value">
-                        <span>Current avg net per backer: <strong>{fmtDollar(avgNetPerBacker)}</strong></span>
-                        <span style={{ margin: '0 6px' }}>{'\u2192'}</span>
-                        <span>After this goal: <strong className={analysis.marginLevel === 'negative' ? 'sg-text-red' : analysis.marginLevel === 'thin' ? 'sg-text-orange' : ''}>{fmtDollar(analysis.marginAfter)}</strong></span>
-                      </div>
-                      {analysis.marginLevel === 'thin' && (
-                        <div className="sg-output-warn-orange">
-                          Thin margin after this goal. Consider a higher threshold.
-                        </div>
-                      )}
-                      {analysis.marginLevel === 'negative' && (
-                        <div className="sg-output-warn-red">
-                          This goal wipes out your margin at expected backer count. Raise the threshold or reduce the cost.
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 3. Funding Progress Indicator */}
-                    {analysis.isFlat && analysis.safeThreshold > 0 && (
-                      <div className="sg-output-row">
-                        <div className="sg-output-label">Funding Progress</div>
-                        <div className="sg-funding-bar-wrap">
-                          <div className="sg-funding-bar">
-                            <div className="sg-funding-bar-fill" style={{ width: `${barPercent(breakoutFunding > 0 ? breakoutFunding : campaignGoal * 2)}%` }} />
-                            {/* Base goal marker */}
-                            <div className="sg-bar-marker sg-bar-marker-goal" style={{ left: `${barPercent(campaignGoal)}%` }}>
-                              <div className="sg-bar-marker-line" />
-                              <div className="sg-bar-marker-label">Goal</div>
-                            </div>
-                            {/* This goal threshold */}
-                            <div className="sg-bar-marker sg-bar-marker-threshold" style={{ left: `${barPercent(analysis.safeThreshold)}%` }}>
-                              <div className="sg-bar-marker-line" />
-                              <div className="sg-bar-marker-label">{goal.name || `SG${idx + 1}`}</div>
-                            </div>
-                            {/* Breakout marker */}
-                            {breakoutFunding > 0 && (
-                              <div className="sg-bar-marker sg-bar-marker-breakout" style={{ left: `${barPercent(breakoutFunding)}%` }}>
-                                <div className="sg-bar-marker-line" />
-                                <div className="sg-bar-marker-label">Breakout</div>
-                              </div>
-                            )}
-                          </div>
-                          <div className="sg-funding-bar-labels">
-                            <span>{fmtDollar(campaignGoal)}</span>
-                            <span>{fmtDollar(maxFunding)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 4. Timing Recommendation */}
-                    {analysis.timingText && (
-                      <div className="sg-output-row">
-                        <div className="sg-output-label">Timing</div>
-                        <div className="sg-output-value sg-output-timing">{analysis.timingText}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                return (
+                  <SortableGoalCard
+                    key={goal.id}
+                    goal={goal}
+                    analysis={analysis}
+                    showOutputs={showOutputs}
+                    avgNetPerBacker={avgNetPerBacker}
+                    breakoutFunding={breakoutFunding}
+                    campaignGoal={campaignGoal}
+                    maxFunding={maxFunding}
+                    barPercent={barPercent}
+                    fmtDollar={fmtDollar}
+                    onUpdate={updateGoal}
+                    onRemove={removeGoal}
+                  />
+                );
+              })}
+            </SortableContext>
+          </DndContext>
 
           <button className="add-btn" onClick={addGoal}>+ Add Stretch Goal</button>
         </section>
 
-        {/* ============ SECTION 2: RECOMMENDED THRESHOLDS ============ */}
+        {/* SECTION 2: RECOMMENDED THRESHOLDS */}
         {campaignGoal > 0 && avgNetPerBacker > 0 && (
           <section className="form-section">
             <h2 className="form-section-label">Recommended Thresholds</h2>
             <div className="sg-recs">
               {[
-                { label: 'First stretch goal', amount: rec1, mult: '1.5\u00d7' },
-                { label: 'Second stretch goal', amount: rec2, mult: '2\u00d7' },
-                { label: 'Third stretch goal', amount: rec3, mult: '3\u00d7' },
+                { label: 'First stretch goal', amount: rec1, mult: '1.5×' },
+                { label: 'Second stretch goal', amount: rec2, mult: '2×' },
+                { label: 'Third stretch goal', amount: rec3, mult: '3×' },
               ].map(r => {
                 const profit = profitAt(r.amount);
                 return (
@@ -542,13 +426,13 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
                 );
               })}
               <p className="form-helper" style={{ marginTop: 12 }}>
-                Stretch goals work best when each threshold requires only 20{'\u2013'}40% more backers than the previous milestone.
+                Stretch goals work best when each threshold requires only 20–40% more backers than the previous milestone.
               </p>
             </div>
           </section>
         )}
 
-        {/* ============ SECTION 3: LADDER HEALTH CHECK ============ */}
+        {/* SECTION 3: LADDER HEALTH CHECK */}
         {form.goals.length > 0 && avgNetPerBacker > 0 && (
           <section className="form-section">
             <h2 className="form-section-label">Stretch Goal Ladder Health Check</h2>
@@ -574,16 +458,15 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
                     <div key={a.goal.id} className="sg-health-item">
                       <span className={`sg-health-dot ${dotClass}`} />
                       <span className="sg-health-name">{a.goal.name || 'Unnamed goal'}</span>
-                      <span className="sg-health-threshold">{a.safeThreshold > 0 ? fmtDollar(a.safeThreshold) : '\u2014'}</span>
+                      <span className="sg-health-threshold">{a.safeThreshold > 0 ? fmtDollar(a.safeThreshold) : '—'}</span>
                       <span className={`sg-health-status ${dotClass}`}>{statusText}</span>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Spacing warnings */}
               {spacingIssues.map((issue, i) => (
-                <div key={i} className="form-warning" style={{ marginBottom: 8 }}>{issue} {'\u2014'} too close, backers won{'\u2019'}t feel momentum.</div>
+                <div key={i} className="form-warning" style={{ marginBottom: 8 }}>{issue}</div>
               ))}
 
               <div className={`sg-health-verdict ${ladderRating === 'red' ? 'bad' : ladderRating === 'orange' ? 'warn' : 'ok'}`}>
@@ -593,6 +476,254 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
           </section>
         )}
       </div>
+    </div>
+  );
+};
+
+/* =========================================
+   Sortable Goal Card
+   ========================================= */
+
+interface GoalAnalysis {
+  goal: StretchGoal;
+  safeThreshold: number;
+  additionalBackers: number;
+  marginAfter: number;
+  marginLevel: 'ok' | 'thin' | 'negative';
+  timingText: string;
+  cost: number;
+  isFlat: boolean;
+}
+
+interface SortableGoalCardProps {
+  goal: StretchGoal;
+  analysis: GoalAnalysis;
+  showOutputs: boolean;
+  avgNetPerBacker: number;
+  breakoutFunding: number;
+  campaignGoal: number;
+  maxFunding: number;
+  barPercent: (val: number) => number;
+  fmtDollar: (n: number) => string;
+  onUpdate: (id: string, patch: Partial<StretchGoal>) => void;
+  onRemove: (id: string) => void;
+}
+
+const SortableGoalCard: React.FC<SortableGoalCardProps> = ({
+  goal, analysis, showOutputs, avgNetPerBacker, breakoutFunding, campaignGoal,
+  maxFunding, barPercent, fmtDollar, onUpdate, onRemove,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: goal.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="printer-card sg-card">
+      <div className="printer-card-top">
+        {/* KF-002: Drag handle */}
+        <button
+          className="sg-drag-handle"
+          {...attributes}
+          {...listeners}
+          title="Drag to reorder"
+          tabIndex={0}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm8-16a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+          </svg>
+        </button>
+
+        <div className="printer-card-fields">
+          <div className="form-field" style={{ flex: 2 }}>
+            <label className="form-label">Goal name</label>
+            <input
+              type="text"
+              className="form-input"
+              value={goal.name}
+              onChange={e => onUpdate(goal.id, { name: e.target.value })}
+              placeholder="e.g. Illustrated chapter headers"
+            />
+          </div>
+          <div className="form-field" style={{ flex: 1 }}>
+            <label className="form-label">Goal type</label>
+            <select
+              className="form-input"
+              value={goal.goalType}
+              onChange={e => onUpdate(goal.id, { goalType: e.target.value as StretchGoalType })}
+            >
+              {GOAL_TYPES.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <button className="remove-btn" onClick={() => onRemove(goal.id)} title="Remove">&times;</button>
+      </div>
+
+      {goal.goalType === 'Custom' && (
+        <div className="form-field" style={{ marginTop: 8 }}>
+          <label className="form-label">Custom type</label>
+          <input
+            type="text"
+            className="form-input"
+            value={goal.customType}
+            onChange={e => onUpdate(goal.id, { customType: e.target.value })}
+            placeholder="Describe your stretch goal type"
+          />
+        </div>
+      )}
+
+      {COST_HINTS[goal.goalType] && (
+        <div className="sg-cost-hint">
+          {COST_HINTS[goal.goalType]}
+        </div>
+      )}
+
+      <div className="printer-card-costs" style={{ marginTop: 8 }}>
+        <div className="form-field" style={{ flex: 1 }}>
+          <label className="form-label">Cost structure</label>
+          <div className="radio-group">
+            <label className={`radio-option${goal.costStructure === 'flat' ? ' active' : ''}`}>
+              <input
+                type="radio"
+                name={`costStruct-${goal.id}`}
+                checked={goal.costStructure === 'flat'}
+                onChange={() => onUpdate(goal.id, { costStructure: 'flat' })}
+              />
+              One-time flat cost
+            </label>
+            <label className={`radio-option${goal.costStructure === 'per_backer' ? ' active' : ''}`}>
+              <input
+                type="radio"
+                name={`costStruct-${goal.id}`}
+                checked={goal.costStructure === 'per_backer'}
+                onChange={() => onUpdate(goal.id, { costStructure: 'per_backer' })}
+              />
+              Per-backer cost
+            </label>
+          </div>
+        </div>
+        <div className="form-field" style={{ flex: 1 }}>
+          {goal.costStructure === 'flat' ? (
+            <>
+              <label className="form-label">Total cost to produce ($)</label>
+              <input
+                type="number"
+                className="form-input"
+                value={goal.flatCost ?? ''}
+                onChange={e => onUpdate(goal.id, { flatCost: e.target.value === '' ? null : Number(e.target.value) })}
+                placeholder="e.g. 1200"
+                min={0}
+                step={1}
+              />
+            </>
+          ) : (
+            <>
+              <label className="form-label">Added cost per backer ($)</label>
+              <input
+                type="number"
+                className="form-input"
+                value={goal.perBackerCost ?? ''}
+                onChange={e => onUpdate(goal.id, { perBackerCost: e.target.value === '' ? null : Number(e.target.value) })}
+                placeholder="e.g. 2.50"
+                min={0}
+                step={0.01}
+              />
+            </>
+          )}
+        </div>
+      </div>
+
+      {showOutputs && (
+        <div className="sg-outputs">
+          <div className="sg-output-row">
+            <div className="sg-output-label">Safe Unlock Threshold</div>
+            {analysis.isFlat && analysis.safeThreshold > 0 ? (
+              <div className="sg-output-value">
+                <strong>{fmtDollar(analysis.safeThreshold)}</strong> in funding
+                <span className="sg-output-detail">
+                  {analysis.additionalBackers > 0 && ` (~${analysis.additionalBackers} backers beyond your base goal)`}
+                </span>
+              </div>
+            ) : !analysis.isFlat && avgNetPerBacker > analysis.cost ? (
+              <div className="sg-output-value">
+                <strong>Affordable from your base goal</strong>
+                <span className="sg-output-detail"> (margin absorbs the per-backer cost)</span>
+              </div>
+            ) : (
+              <div className="sg-output-value sg-output-warn-red">
+                This cost exceeds your per-backer margin. Reduce the cost or raise your prices.
+              </div>
+            )}
+          </div>
+
+          <div className="sg-output-row">
+            <div className="sg-output-label">Profit Buffer Check</div>
+            <div className="sg-output-value">
+              <span>Current avg net per backer: <strong>{fmtDollar(avgNetPerBacker)}</strong></span>
+              <span style={{ margin: '0 6px' }}>{'→'}</span>
+              <span>After this goal: <strong className={analysis.marginLevel === 'negative' ? 'sg-text-red' : analysis.marginLevel === 'thin' ? 'sg-text-orange' : ''}>{fmtDollar(analysis.marginAfter)}</strong></span>
+            </div>
+            {analysis.marginLevel === 'thin' && (
+              <div className="sg-output-warn-orange">
+                Thin margin after this goal. Consider a higher threshold.
+              </div>
+            )}
+            {analysis.marginLevel === 'negative' && (
+              <div className="sg-output-warn-red">
+                This goal wipes out your margin at expected backer count. Raise the threshold or reduce the cost.
+              </div>
+            )}
+          </div>
+
+          {analysis.isFlat && analysis.safeThreshold > 0 && (
+            <div className="sg-output-row">
+              <div className="sg-output-label">Funding Progress</div>
+              <div className="sg-funding-bar-wrap">
+                <div className="sg-funding-bar">
+                  <div className="sg-funding-bar-fill" style={{ width: `${barPercent(breakoutFunding > 0 ? breakoutFunding : campaignGoal * 2)}%` }} />
+                  <div className="sg-bar-marker sg-bar-marker-goal" style={{ left: `${barPercent(campaignGoal)}%` }}>
+                    <div className="sg-bar-marker-line" />
+                    <div className="sg-bar-marker-label">Goal</div>
+                  </div>
+                  <div className="sg-bar-marker sg-bar-marker-threshold" style={{ left: `${barPercent(analysis.safeThreshold)}%` }}>
+                    <div className="sg-bar-marker-line" />
+                    <div className="sg-bar-marker-label">{goal.name || 'SG'}</div>
+                  </div>
+                  {breakoutFunding > 0 && (
+                    <div className="sg-bar-marker sg-bar-marker-breakout" style={{ left: `${barPercent(breakoutFunding)}%` }}>
+                      <div className="sg-bar-marker-line" />
+                      <div className="sg-bar-marker-label">Breakout</div>
+                    </div>
+                  )}
+                </div>
+                <div className="sg-funding-bar-labels">
+                  <span>{fmtDollar(campaignGoal)}</span>
+                  <span>{fmtDollar(maxFunding)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {analysis.timingText && (
+            <div className="sg-output-row">
+              <div className="sg-output-label">Timing</div>
+              <div className="sg-output-value sg-output-timing">{analysis.timingText}</div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

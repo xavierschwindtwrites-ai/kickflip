@@ -59,6 +59,24 @@ function registerIpcHandlers(): void {
   ipcMain.handle('campaign:delete', (_, id: number) => {
     dbRun('DELETE FROM campaigns WHERE id = ?', [id]);
   });
+
+  ipcMain.handle('campaign:rename', (_, id: number, newTitle: string) => {
+    dbRun(
+      `UPDATE campaigns SET title = ?, updated_at = datetime('now') WHERE id = ?`,
+      [newTitle, id],
+    );
+  });
+
+  ipcMain.handle('campaign:duplicate', (_, id: number) => {
+    const original = dbGet('SELECT * FROM campaigns WHERE id = ?', [id]);
+    if (!original) return null;
+    const newTitle = `Copy of ${original.title as string}`;
+    const result = dbRun(
+      `INSERT INTO campaigns (title, data) VALUES (?, ?)`,
+      [newTitle, original.data as string],
+    );
+    return dbGet('SELECT * FROM campaigns WHERE id = ?', [result.lastInsertRowid]);
+  });
 }
 
 app.on('ready', async () => {

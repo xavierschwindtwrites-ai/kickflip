@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { NavItem } from '../app';
 import type {
   CampaignData,
@@ -6,14 +6,16 @@ import type {
   PrinterQuotesData,
   PricingTiersData,
   ShippingPlannerData,
+  ScenarioModelerData,
   PodPrinter,
-  ShippingRegion,
+  RewardTier,
 } from '../../types/campaign';
 import {
   DEFAULT_BOOK_SETUP,
   defaultPrinterQuotes,
   defaultPricingTiers,
   defaultShippingPlanner,
+  defaultScenarioModeler,
 } from '../../types/campaign';
 
 const TOTAL_FEE = 0.08;
@@ -28,17 +30,19 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
   const [printerQuotes, setPrinterQuotes] = useState<PrinterQuotesData>(defaultPrinterQuotes);
   const [pricingTiers, setPricingTiers] = useState<PricingTiersData>(defaultPricingTiers);
   const [shippingPlanner, setShippingPlanner] = useState<ShippingPlannerData>(defaultShippingPlanner);
+  const [scenarioModeler, setScenarioModeler] = useState<ScenarioModelerData>(defaultScenarioModeler);
   const [loaded, setLoaded] = useState(false);
 
-  // Stress test state
   const [backerShortfall, setBackerShortfall] = useState(0);
   const [shippingOverrun, setShippingOverrun] = useState(0);
-  const [stressFailureRate, setStressFailureRate] = useState<number | null>(null); // null = use shipping planner value
+  const [stressFailureRate, setStressFailureRate] = useState<number | null>(null);
 
-  // Reverse pricing state
   const [targetNet, setTargetNet] = useState<number | null>(null);
   const [reversePrinterId, setReversePrinterId] = useState('');
   const [reverseRegionId, setReverseRegionId] = useState('');
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,14 +56,32 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
           if (p.printerQuotes) setPrinterQuotes(p.printerQuotes);
           if (p.pricingTiers) setPricingTiers(p.pricingTiers);
           if (p.shippingPlanner) setShippingPlanner(prev => ({ ...prev, ...p.shippingPlanner }));
+          if (p.scenarioModeler) setScenarioModeler({ ...defaultScenarioModeler(), ...p.scenarioModeler });
         } catch { /* */ }
       }
       setLoaded(true);
+      setTimeout(() => { isInitialLoad.current = false; }, 50);
     })();
     return () => { cancelled = true; };
   }, [campaignId]);
 
-  // --- Missing data checks ---
+  // Autosave scenarioModeler data
+  useEffect(() => {
+    if (isInitialLoad.current) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      let existing: CampaignData = {};
+      try {
+        const c = await window.kickflip.loadCampaign(campaignId);
+        if (c && c.data) existing = JSON.parse(c.data);
+      } catch { /* */ }
+      existing.scenarioModeler = scenarioModeler;
+      await window.kickflip.saveCampaignData(campaignId, JSON.stringify(existing));
+    }, 500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [scenarioModeler, campaignId]);
+
+  // Missing data checks
   const missingScreens: { label: string; nav: NavItem }[] = [];
   const hasEstimates = bookSetup.conservativeEstimate !== null;
   const firstPod = printerQuotes.podPrinters.find(p => p.unitCost !== null && p.unitCost > 0);
@@ -94,32 +116,35 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
     return <div className="sm-screen"><div className="sm-header"><h1 className="sm-title">Scenario Modeler</h1></div></div>;
   }
 
-  // --- Derived data ---
+  // Derived data
   const podPrinters = printerQuotes.podPrinters.filter(p => p.unitCost !== null && p.unitCost > 0);
   const primaryPod = firstPod!;
-  const printCost = primaryPod.unitCost!;
 
-  // Best tier
-  const bestTier = pricingTiers.tiers.find(t => {
-    if (!t.pledgeAmount || t.pledgeAmount <= 0) return false;
-    const net = t.pledgeAmount * (1 - TOTAL_FEE) - printCost;
-    return net > 0;
-  }) || pricingTiers.tiers.find(t => t.pledgeAmount !== null && t.pledgeAmount > 0);
-  const pledgeAmount = bestTier?.pledgeAmount ?? 0;
-
-  // Enabled regions
   const enabledRegions = shippingPlanner.regions.filter(r => r.enabled);
-
-  // Weighted avg shipping cost
   const avgShippingCost = enabledRegions.reduce((sum, r) => {
     const pct = (r.backerPercent ?? 0) / 100;
     const cost = r.costPerCopy ?? 0;
     return sum + pct * cost;
   }, 0);
 
-  // Active failure rate (stress or shipping planner)
   const failureRate = stressFailureRate !== null ? stressFailureRate : shippingPlanner.paymentFailureRate;
   const bufferRate = shippingPlanner.bufferPercent / 100;
+
+  // KF-010: Get active tiers with pledge amounts
+  const activeTiers = pricingTiers.tiers.filter(t => t.pledgeAmount !== null && t.pledgeAmount > 0);
+
+  // KF-010: Compute effective weights (user-set or equal distribution)
+  const weights = computeTierWeights(activeTiers, scenarioModeler.tierWeights);
+  const weightTotal = Object.values(weights).reduce((s, w) => s + w, 0);
+
+  // KF-010: Weighted avg pledge and print cost
+  const { weightedAvgPledge, weightedAvgPrintCost, weightedAvgShipping } = computeWeightedAverages(
+    activeTiers, weights, weightTotal, printerQuotes, avgShippingCost
+  );
+
+  const pledgeAmount = weightedAvgPledge;
+  const printCost = weightedAvgPrintCost;
+  const weightedShipping = weightedAvgShipping;
 
   // Build scenarios
   const rawScenarios = [
@@ -136,11 +161,10 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
     const failures = Math.round(afterFees * (failureRate / 100) * 100) / 100;
     const afterFailures = afterFees - failures;
     const printing = Math.round(backers * printCost * 100) / 100;
-    const shipping = Math.round(backers * avgShippingCost * (1 + shippingOverrun / 100) * 100) / 100;
+    const shipping = Math.round(backers * weightedShipping * (1 + shippingOverrun / 100) * 100) / 100;
     const buffer = Math.round(afterFailures * bufferRate * 100) / 100;
     const net = Math.round((afterFailures - printing - shipping - buffer) * 100) / 100;
 
-    // Bar segments (as % of gross)
     const pctFees = gross > 0 ? (fees / gross) * 100 : 0;
     const pctFailures = gross > 0 ? (failures / gross) * 100 : 0;
     const pctPrinting = gross > 0 ? (printing / gross) * 100 : 0;
@@ -148,21 +172,28 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
     const pctBuffer = gross > 0 ? (buffer / gross) * 100 : 0;
     const pctNet = gross > 0 ? Math.max(0, (net / gross) * 100) : 0;
 
+    // KF-010: Per-tier breakdown
+    const tierBreakdown = activeTiers.map(t => {
+      const tierWeight = (weights[t.id] ?? 0) / 100;
+      const tierBackers = Math.round(backers * tierWeight);
+      const tierRevenue = tierBackers * (t.pledgeAmount ?? 0);
+      return { name: t.name || `$${t.pledgeAmount}`, backers: tierBackers, revenue: tierRevenue };
+    });
+
     return {
       ...raw, backers, gross, fees, afterFees, failures, afterFailures,
       printing, shipping, buffer, net,
       pctFees, pctFailures, pctPrinting, pctShipping, pctBuffer, pctNet,
+      tierBreakdown,
     };
   });
 
-  // Stress summary
   const stressSummary = scenarios.map(s => {
     if (s.net > 0) return 'funds safely';
     if (Math.abs(s.net) < 50) return 'breaks even';
     return 'loses money';
   });
 
-  // Reset stress
   const resetStress = () => {
     setBackerShortfall(0);
     setShippingOverrun(0);
@@ -171,7 +202,7 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
 
   const isStressed = backerShortfall !== 0 || shippingOverrun !== 0 || stressFailureRate !== null;
 
-  // --- Reverse pricing engine ---
+  // Reverse pricing
   const reversePrinter = podPrinters.find(p => p.id === reversePrinterId) || primaryPod;
   const reverseRegion = enabledRegions.find(r => r.id === reverseRegionId) || enabledRegions[0];
   const revPrintCost = reversePrinter?.unitCost ?? 0;
@@ -179,28 +210,42 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
   const revTarget = targetNet ?? 0;
   const minPledge = revTarget > 0 ? Math.ceil(((revTarget + revPrintCost + revShipCost) / (1 - TOTAL_FEE)) * 100) / 100 : null;
 
-  // --- Cost floor ---
+  // Cost floor
   const conservativeBackers = bookSetup.conservativeEstimate ?? 0;
   const costFloorDenom = 1 - TOTAL_FEE - bufferRate;
-  const costFloorPerBacker = costFloorDenom > 0 ? (printCost + avgShippingCost) / costFloorDenom : 0;
+  const costFloorPerBacker = costFloorDenom > 0 ? (printCost + weightedShipping) / costFloorDenom : 0;
   const costFloor = Math.round(conservativeBackers * costFloorPerBacker * 100) / 100;
   const goal = pricingTiers.goal ?? 0;
 
-  // --- Crossover ---
+  // Crossover
   const firstOffset = printerQuotes.offsetPrinters.find(o => o.volumeRows.some(r => r.quantity && r.unitCost));
   let crossoverCopies: number | null = null;
   if (firstPod && firstOffset) {
     const lowestRow = firstOffset.volumeRows
       .filter(r => r.quantity && r.unitCost)
       .sort((a, b) => (a.quantity ?? 0) - (b.quantity ?? 0))[0];
-    if (lowestRow && lowestRow.unitCost !== null && lowestRow.quantity !== null && printCost > lowestRow.unitCost) {
+    if (lowestRow && lowestRow.unitCost !== null && lowestRow.quantity !== null && primaryPod.unitCost! > lowestRow.unitCost) {
       const offsetTotal = lowestRow.totalCost ?? (lowestRow.quantity * lowestRow.unitCost);
-      crossoverCopies = Math.ceil(offsetTotal / (printCost - lowestRow.unitCost));
+      crossoverCopies = Math.ceil(offsetTotal / (primaryPod.unitCost! - lowestRow.unitCost));
     }
   }
 
   const printerLabel = (p: PodPrinter) =>
     p.printerName === 'Other' ? (p.customName || 'Other') : (p.printerName || 'Unnamed');
+
+  // KF-010: Weight edit handler
+  const updateWeight = useCallback((tierId: string, value: number) => {
+    setScenarioModeler(prev => ({
+      ...prev,
+      tierWeights: { ...prev.tierWeights, [tierId]: value },
+    }));
+  }, []);
+
+  const resetWeights = useCallback(() => {
+    setScenarioModeler(prev => ({ ...prev, tierWeights: {} }));
+  }, []);
+
+  const hasCustomWeights = activeTiers.some(t => scenarioModeler.tierWeights[t.id] !== undefined);
 
   return (
     <div className="sm-screen">
@@ -230,7 +275,6 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
                 </div>
               </div>
 
-              {/* Cost bar */}
               {sc.gross > 0 && (
                 <div className="sm-bar">
                   <div className="sm-bar-seg sm-bar-fees" style={{ width: `${sc.pctFees + sc.pctFailures}%` }} title={`Fees & failures: ${(sc.pctFees + sc.pctFailures).toFixed(1)}%`} />
@@ -249,9 +293,67 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
                   <span><i className="sm-dot sm-bar-net" />Net</span>
                 </div>
               )}
+
+              {/* KF-010: Per-tier breakdown */}
+              {activeTiers.length > 1 && sc.tierBreakdown.length > 0 && (
+                <div className="sm-tier-breakdown">
+                  <div className="sm-tier-breakdown-title">Tier breakdown</div>
+                  {sc.tierBreakdown.map((tb, i) => (
+                    <div key={i} className="sm-tier-breakdown-row">
+                      <span className="sm-tier-breakdown-name">{tb.name}</span>
+                      <span className="sm-tier-breakdown-stat">~{tb.backers.toLocaleString()} backers</span>
+                      <span className="sm-tier-breakdown-stat">${tb.revenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </section>
+
+        {/* KF-010: TIER DISTRIBUTION */}
+        {activeTiers.length > 1 && (
+          <section className="form-section">
+            <h2 className="form-section-label">Tier Distribution</h2>
+            <p className="form-helper" style={{ marginBottom: 12 }}>
+              Set the expected percentage of backers for each tier. This shapes the weighted averages used above.
+              {!hasCustomWeights && ' Currently using equal distribution — customize below if you have prior campaign data.'}
+            </p>
+
+            <div className="sm-tier-weights">
+              {activeTiers.map(t => {
+                const w = weights[t.id] ?? 0;
+                return (
+                  <div key={t.id} className="sm-tier-weight-row">
+                    <span className="sm-tier-weight-name">{t.name || `$${t.pledgeAmount} tier`}</span>
+                    <input
+                      type="number"
+                      className="form-input sm-tier-weight-input"
+                      value={scenarioModeler.tierWeights[t.id] ?? ''}
+                      placeholder={String(Math.round(100 / activeTiers.length))}
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={e => updateWeight(t.id, e.target.value === '' ? 0 : Number(e.target.value))}
+                    />
+                    <span className="sm-tier-weight-pct">%</span>
+                    <span className="sm-tier-weight-effective">effective: {w.toFixed(1)}%</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {hasCustomWeights && (
+              <div className="sm-tier-weights-footer">
+                <span className={`sm-tier-weights-total ${Math.abs(weightTotal - 100) > 1 ? 'warn' : 'ok'}`}>
+                  Total: {weightTotal.toFixed(1)}%
+                  {Math.abs(weightTotal - 100) > 1 && ' — must sum to 100%'}
+                </span>
+                <button className="sm-reset-btn" style={{ marginLeft: 12 }} onClick={resetWeights}>Reset to equal</button>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* 2. STRESS TEST */}
         <section className="sm-stress">
@@ -260,7 +362,7 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
           <div className="sm-slider-row">
             <label className="sm-slider-label">
               Backer shortfall
-              <span className="sm-slider-val">{backerShortfall > 0 ? `\u2212${backerShortfall}%` : '0%'}</span>
+              <span className="sm-slider-val">{backerShortfall > 0 ? `−${backerShortfall}%` : '0%'}</span>
             </label>
             <input
               type="range" min={0} max={40} step={1}
@@ -436,7 +538,7 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
                 </thead>
                 <tbody>
                   {scenarios.map(sc => {
-                    const podTotal = sc.backers * printCost;
+                    const podTotal = sc.backers * primaryPod.unitCost!;
                     const recommend = crossoverCopies !== null && sc.backers >= crossoverCopies;
                     return (
                       <tr key={sc.label}>
@@ -466,13 +568,66 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
   );
 };
 
-/* ---- Sub-components ---- */
+/* ---- Helpers ---- */
+
+function computeTierWeights(
+  tiers: RewardTier[],
+  stored: Record<string, number>
+): Record<string, number> {
+  if (tiers.length === 0) return {};
+  const hasAny = tiers.some(t => stored[t.id] !== undefined);
+  if (!hasAny) {
+    const equal = 100 / tiers.length;
+    return Object.fromEntries(tiers.map(t => [t.id, equal]));
+  }
+  // Fill in missing tiers with 0 and normalize
+  const rawWeights = Object.fromEntries(tiers.map(t => [t.id, stored[t.id] ?? 0]));
+  const total = Object.values(rawWeights).reduce((s, w) => s + w, 0);
+  if (total <= 0) {
+    const equal = 100 / tiers.length;
+    return Object.fromEntries(tiers.map(t => [t.id, equal]));
+  }
+  return Object.fromEntries(
+    Object.entries(rawWeights).map(([id, w]) => [id, (w / total) * 100])
+  );
+}
+
+function computeWeightedAverages(
+  tiers: RewardTier[],
+  weights: Record<string, number>,
+  weightTotal: number,
+  printerQuotes: PrinterQuotesData,
+  avgShippingCost: number
+) {
+  if (tiers.length === 0 || weightTotal <= 0) {
+    return { weightedAvgPledge: 0, weightedAvgPrintCost: 0, weightedAvgShipping: avgShippingCost };
+  }
+
+  let weightedAvgPledge = 0;
+  let weightedAvgPrintCost = 0;
+  let weightedAvgShipping = 0;
+
+  for (const t of tiers) {
+    const w = (weights[t.id] ?? 0) / 100;
+    const pledge = t.pledgeAmount ?? 0;
+    const isDigital = t.isDigitalOnly ?? false;
+    const printer = isDigital ? null : printerQuotes.podPrinters.find(p => p.id === t.printerId);
+    const pCost = isDigital ? 0 : (printer?.unitCost ?? 0);
+    const shipCost = isDigital ? 0 : avgShippingCost;
+
+    weightedAvgPledge += pledge * w;
+    weightedAvgPrintCost += pCost * w;
+    weightedAvgShipping += shipCost * w;
+  }
+
+  return { weightedAvgPledge, weightedAvgPrintCost, weightedAvgShipping };
+}
 
 const Row: React.FC<{ label: string; value: number; muted?: boolean }> = ({ label, value, muted }) => (
   <div className={`sm-card-row ${muted ? 'muted' : ''}`}>
     <span>{label}</span>
     <span>
-      {value < 0 ? '\u2212' : ''}${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      {value < 0 ? '−' : ''}${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
     </span>
   </div>
 );

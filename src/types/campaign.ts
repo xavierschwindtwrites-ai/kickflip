@@ -17,7 +17,9 @@ export interface BookSetupData {
   bookTitle: string;
   genre: string;
   pageCount: number | null;
-  trimSize: string;
+  trimSize: string; // legacy global trim size
+  trimSizePaperback: string; // KF-006: per-format trim sizes
+  trimSizeHardcover: string;
   interior: 'bw' | 'color';
   coverFinish: 'matte' | 'glossy';
   coverType: 'paperback' | 'hardcover' | 'both';
@@ -85,6 +87,7 @@ export interface RewardTier {
   customInclude: string;
   printerId: string; // POD printer id from PrinterQuotesData
   shippingType: 'domestic' | 'international' | 'both';
+  isDigitalOnly: boolean; // KF-001: digital-only tiers have no printer/shipping
 }
 
 export interface PricingTiersData {
@@ -101,6 +104,7 @@ export function createRewardTier(): RewardTier {
     customInclude: '',
     printerId: '',
     shippingType: 'both',
+    isDigitalOnly: false,
   };
 }
 
@@ -173,6 +177,7 @@ export interface StretchGoal {
   costStructure: 'flat' | 'per_backer';
   flatCost: number | null;
   perBackerCost: number | null;
+  sortOrder: number; // KF-002: drag-and-drop ordering
 }
 
 export interface StretchGoalsData {
@@ -188,6 +193,7 @@ export function createStretchGoal(): StretchGoal {
     costStructure: 'flat',
     flatCost: null,
     perBackerCost: null,
+    sortOrder: 0,
   };
 }
 
@@ -211,8 +217,10 @@ export interface OutreachContact {
 
 export interface PromotionalToolsData {
   readinessChecks: ReadinessItem[];
-  campaignLength: 20 | 25 | 30;
+  campaignLength: number; // KF-005: now any number, not just 20|25|30
   contacts: OutreachContact[];
+  useEndDateOverride: boolean; // KF-005: manual end date override
+  overrideEndDate: string;     // KF-005: specific end date when override is active
 }
 
 export function createOutreachContact(): OutreachContact {
@@ -231,6 +239,8 @@ export function defaultPromotionalTools(): PromotionalToolsData {
     readinessChecks: [],
     campaignLength: 30,
     contacts: [],
+    useEndDateOverride: false,
+    overrideEndDate: '',
   };
 }
 
@@ -245,9 +255,31 @@ export interface FulfillmentTimelineData {
 
 export type PledgeManagerPlatform = 'Backerkit' | 'Crowdox' | 'Kickstarter native' | 'Other';
 
+// KF-012: Multi-printer entries in Fulfillment Planner
+export interface FulfillmentPrinterEntry {
+  id: string;
+  printerId: string;
+  tiersFullfilled: string;
+  estimatedUnitCost: number | null;
+  turnaroundWeeks: number | null;
+  notes: string;
+}
+
+export function createFulfillmentPrinterEntry(): FulfillmentPrinterEntry {
+  return {
+    id: uid(),
+    printerId: '',
+    tiersFullfilled: '',
+    estimatedUnitCost: null,
+    turnaroundWeeks: null,
+    notes: '',
+  };
+}
+
 export interface FulfillmentPlannerData {
   timeline: FulfillmentTimelineData;
-  confirmedPrinterId: string;
+  confirmedPrinterId: string; // legacy single-printer field
+  printerEntries: FulfillmentPrinterEntry[]; // KF-012: multi-printer entries
   printQuantity: number | null;
   usePledgeManager: boolean | null;
   pledgeManagerPlatform: PledgeManagerPlatform;
@@ -268,6 +300,7 @@ export function defaultFulfillmentPlanner(): FulfillmentPlannerData {
       estimatedFulfillmentCompleteDate: '',
     },
     confirmedPrinterId: '',
+    printerEntries: [createFulfillmentPrinterEntry()],
     printQuantity: null,
     usePledgeManager: null,
     pledgeManagerPlatform: 'Backerkit',
@@ -332,6 +365,53 @@ export function defaultRetrospective(): RetrospectiveData {
   };
 }
 
+// KF-010: Scenario Modeler per-tier weights
+export interface ScenarioModelerData {
+  tierWeights: Record<string, number>; // tierId -> 0-100 percentage
+}
+
+export function defaultScenarioModeler(): ScenarioModelerData {
+  return { tierWeights: {} };
+}
+
+// KF-013: Pre-launch follower tracker
+export interface PrelaunchTrackerData {
+  followerCount: number | null;
+  targetFollowerCount: number | null;
+  conversionRateOverride: number | null; // percentage, overrides industry default
+  notes: string;
+}
+
+export function defaultPrelaunchTracker(): PrelaunchTrackerData {
+  return {
+    followerCount: null,
+    targetFollowerCount: null,
+    conversionRateOverride: null,
+    notes: '',
+  };
+}
+
+// KF-014: Live campaign daily tracker
+export interface LiveCampaignEntry {
+  id: string;
+  date: string;
+  backers: number | null;
+  funding: number | null;
+}
+
+export function createLiveCampaignEntry(): LiveCampaignEntry {
+  return { id: uid(), date: '', backers: null, funding: null };
+}
+
+export interface LiveCampaignData {
+  isActive: boolean;
+  entries: LiveCampaignEntry[];
+}
+
+export function defaultLiveCampaign(): LiveCampaignData {
+  return { isActive: false, entries: [] };
+}
+
 export interface CampaignData {
   bookSetup?: BookSetupData;
   printerQuotes?: PrinterQuotesData;
@@ -341,6 +421,9 @@ export interface CampaignData {
   promotionalTools?: PromotionalToolsData;
   fulfillmentPlanner?: FulfillmentPlannerData;
   retrospective?: RetrospectiveData;
+  scenarioModeler?: ScenarioModelerData;     // KF-010
+  prelaunchTracker?: PrelaunchTrackerData;   // KF-013
+  liveCampaign?: LiveCampaignData;           // KF-014
 }
 
 let _idCounter = 0;
@@ -394,6 +477,8 @@ export const DEFAULT_BOOK_SETUP: BookSetupData = {
   genre: '',
   pageCount: null,
   trimSize: '',
+  trimSizePaperback: '',
+  trimSizeHardcover: '',
   interior: 'bw',
   coverFinish: 'matte',
   coverType: 'paperback',

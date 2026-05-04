@@ -13,4 +13,8 @@ contextBridge.exposeInMainWorld('kickflip', {
     ipcRenderer.invoke('campaign:create', title, data),
   deleteCampaign: (id: number) =>
     ipcRenderer.invoke('campaign:delete', id),
+  renameCampaign: (id: number, newTitle: string) =>
+    ipcRenderer.invoke('campaign:rename', id, newTitle),
+  duplicateCampaign: (id: number) =>
+    ipcRenderer.invoke('campaign:duplicate', id),
 });
