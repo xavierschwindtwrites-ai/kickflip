@@ -16,7 +16,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KickFlip — Plan your Kickstarter. Know your numbers.</title>
-<meta name="description" content="A free desktop app for indie authors planning Kickstarter campaigns. No account, no subscription, your data stays on your computer.">
+<meta name="description" content="A free, offline desktop app that does the Kickstarter math indie authors lose sleep over. No account, no subscription, your data never leaves your computer.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
@@ -48,7 +48,10 @@
   /* ---- Hero ---- */
   .hero {
     text-align: center;
-    padding: 64px 24px 56px;
+    padding: 72px 24px 56px;
+    background:
+      radial-gradient(1200px 480px at 50% -120px, rgba(232, 98, 42, 0.10), transparent 60%),
+      radial-gradient(800px 360px at 50% 100%, rgba(232, 98, 42, 0.04), transparent 70%);
   }
 
   .hero-badge {
@@ -198,6 +201,62 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.10);
   }
 
+  /* ---- Screenshots ---- */
+  .shots-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 820px) {
+    .shots-grid { grid-template-columns: 1fr; }
+  }
+
+  .shot {
+    background: #fff;
+    border: 1px solid #e8e8eb;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .shot-caption {
+    padding: 14px 18px 16px;
+    border-top: 1px solid #eee;
+    font-size: 13px;
+    color: var(--gray);
+    line-height: 1.5;
+  }
+
+  .shot-caption strong {
+    display: block;
+    color: var(--dark);
+    font-weight: 700;
+    font-size: 13.5px;
+    margin-bottom: 2px;
+  }
+
+  .shots-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 540px) {
+    .shots-row { grid-template-columns: 1fr; }
+  }
+
   /* ---- Features ---- */
   .features-grid {
     display: grid;
@@ -344,6 +403,77 @@
     line-height: 1.6;
   }
 
+  /* ---- FAQ ---- */
+  .faq-list {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .faq-item {
+    background: #fff;
+    border: 1px solid #e8e8eb;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .faq-item[open] {
+    border-color: rgba(232, 98, 42, 0.3);
+  }
+
+  .faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 16px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .faq-item summary::-webkit-details-marker { display: none; }
+
+  .faq-item summary::after {
+    content: '';
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid var(--orange);
+    border-bottom: 2px solid var(--orange);
+    transform: rotate(45deg);
+    transition: transform 0.2s;
+    margin-bottom: 4px;
+  }
+
+  .faq-item[open] summary::after {
+    transform: rotate(-135deg);
+    margin-bottom: 0;
+    margin-top: 4px;
+  }
+
+  .faq-item summary:hover { color: var(--orange); }
+
+  .faq-body {
+    padding: 0 20px 18px;
+    font-size: 14.5px;
+    color: var(--gray);
+    line-height: 1.65;
+  }
+
+  .faq-body code {
+    background: #f0f0f0;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  }
+
   /* ---- Community ---- */
   .community-content {
     max-width: 580px;
@@ -410,8 +540,8 @@
   <h1>Plan your Kickstarter.<br>Know your numbers.</h1>
 
   <p class="hero-sub">
-    A free desktop app for indie authors.
-    No account. No subscription. Your data never leaves your computer.
+    The free desktop app that does the spreadsheet thinking so you don&rsquo;t have to.
+    Built for indie authors. No account. Your data never leaves your computer.
   </p>
 
   <div class="hero-buttons">
@@ -457,8 +587,8 @@
 
 <!-- ============ VIDEO ============ -->
 <section>
-  <h2 class="section-heading">See KickFlip in action</h2>
-  <p class="section-sub">A full walkthrough of every screen &mdash; from pricing your tiers to planning fulfillment.</p>
+  <h2 class="section-heading">See it in action</h2>
+  <p class="section-sub">A full walkthrough of every screen &mdash; from pricing your tiers to planning fulfillment without surprise FedEx invoices.</p>
   <div class="video-wrap">
     <iframe
       width="100%"
@@ -471,10 +601,41 @@
   </div>
 </section>
 
+<!-- ============ SCREENSHOTS ============ -->
+<section>
+  <h2 class="section-heading">A quick tour</h2>
+  <p class="section-sub">No abstract dashboards. Real screens, real numbers, all running locally on your laptop.</p>
+  <div class="shots-grid">
+    <div class="shot">
+      <img src="https://i.imgur.com/OU5RhZl.png" alt="KickFlip sidebar showing the twelve campaign planning sections" loading="lazy">
+      <div class="shot-caption">
+        <strong>Twelve sections, one app</strong>
+        Work through them in order and your campaign plan builds itself &mdash; from book setup to post-mortem.
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div class="shot">
+        <img src="https://i.imgur.com/gZjzAfV.png" alt="KickFlip dashboard showing campaign overview metrics" loading="lazy">
+        <div class="shot-caption">
+          <strong>Dashboard</strong>
+          The whole campaign at a glance &mdash; goal, projected raise, per-backer margin, and what&rsquo;s still missing before you can launch.
+        </div>
+      </div>
+      <div class="shot">
+        <img src="https://i.imgur.com/kjifKNY.png" alt="KickFlip Book Setup page with campaign basics and book details fields" loading="lazy">
+        <div class="shot-caption">
+          <strong>Book Setup</strong>
+          Start with the basics: launch date, page count, trim size, format. Every later screen reads from these fields, so you only enter the truth once.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ FEATURES ============ -->
 <section>
-  <h2 class="section-heading">Everything you need to plan a campaign</h2>
-  <p class="section-sub">Ten tools in one app. Fill them in order and your campaign plan builds itself.</p>
+  <h2 class="section-heading">Everything you need, none of the spreadsheets</h2>
+  <p class="section-sub">Ten tools, one app, zero subscriptions. Built specifically for the questions indie authors actually have to answer.</p>
   <div class="features-grid">
 
     <div class="feature-card">
@@ -482,7 +643,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       </div>
       <h3>Per-backer margin calculator <span class="badge-improved">Improved</span></h3>
-      <p>See exactly what you net after Kickstarter fees, printing, and shipping before you launch. Digital-only tiers (ebook, audiobook, PDF) skip print and shipping costs entirely.</p>
+      <p>See exactly what lands in your pocket after Kickstarter, your printer, and the post office have all taken their cut. Digital-only tiers (ebook, audiobook, PDF) skip the printing math entirely.</p>
     </div>
 
     <div class="feature-card">
@@ -490,7 +651,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       </div>
       <h3>Three-scenario modeler <span class="badge-improved">Improved</span></h3>
-      <p>Plan for conservative, expected, and breakout funding &mdash; now with custom per-tier backer distribution so your projections match your real reward mix.</p>
+      <p>Plan for the conservative campaign, the expected one, and the breakout you secretly hope for. Custom per-tier weighting means the numbers match your actual reward mix &mdash; not some Kickstarter average.</p>
     </div>
 
     <div class="feature-card">
@@ -498,7 +659,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
       </div>
       <h3>Shipping planner</h3>
-      <p>Know your total shipping exposure across every region &mdash; US, UK, EU, Canada, Australia, and Rest of World &mdash; before you set your goal.</p>
+      <p>US, UK, EU, Canada, Australia, Rest of World. See your full international shipping exposure before you set a funding goal you&rsquo;ll later regret.</p>
     </div>
 
     <div class="feature-card">
@@ -506,7 +667,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       </div>
       <h3>Drag-and-drop stretch goals <span class="badge-improved">Improved</span></h3>
-      <p>Build a stretch goal ladder that is funded by the backers who unlock it &mdash; then drag goals into the right order with a single move.</p>
+      <p>Build a stretch ladder where each rung is funded by the backers who unlock it &mdash; not by your savings account. Reorder with a drag, not a panicked spreadsheet rewrite.</p>
     </div>
 
     <div class="feature-card">
@@ -514,7 +675,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       </div>
       <h3>Multi-printer fulfillment <span class="badge-new">New</span></h3>
-      <p>Split fulfillment across multiple printers, assign tiers to each, and see per-entry and aggregate costs in one place.</p>
+      <p>One printer for paperbacks, another for the special edition hardcovers, a third for the bookmarks. Assign tiers to each and watch the per-entry and aggregate costs roll up automatically.</p>
     </div>
 
     <div class="feature-card">
@@ -522,7 +683,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       </div>
       <h3>Campaign management <span class="badge-new">New</span></h3>
-      <p>Rename, duplicate, or delete campaigns from the sidebar. Run multiple campaigns side-by-side for different books or editions.</p>
+      <p>Run as many campaigns side-by-side as you like &mdash; for sequels, special editions, or that &ldquo;what if I priced it differently?&rdquo; experiment. Rename, duplicate, or delete from the sidebar.</p>
     </div>
 
     <div class="feature-card">
@@ -530,7 +691,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </div>
       <h3>Pre-launch follower tracker <span class="badge-new">New</span></h3>
-      <p>Enter your Kickstarter pre-launch follower count and see exactly how many you need to hit each funding scenario, using industry-standard conversion rate math.</p>
+      <p>Punch in your Kickstarter follower count and see exactly how many more you need to hit each scenario. Industry-standard conversion math &mdash; no &ldquo;just hope&rdquo; involved.</p>
     </div>
 
     <div class="feature-card">
@@ -538,7 +699,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       </div>
       <h3>Live campaign tracker <span class="badge-new">New</span></h3>
-      <p>Log daily backer and funding totals while your campaign runs. See a funding chart, daily average, and projected final total at a glance.</p>
+      <p>Once you&rsquo;re live, log daily backer and funding totals and watch the trajectory. Funding chart, daily average, and a projected final &mdash; instead of refreshing the Kickstarter page every twelve minutes.</p>
     </div>
 
     <div class="feature-card">
@@ -546,7 +707,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><polyline points="9 12 11 14 15 10"/></svg>
       </div>
       <h3>Launch readiness check</h3>
-      <p>A checklist that pulls from your real data &mdash; pricing, shipping, printer quotes, and outreach &mdash; to tell you if you&rsquo;re ready to go live.</p>
+      <p>A checklist that reads your actual data &mdash; pricing, shipping, printer quotes, outreach &mdash; and tells you whether you&rsquo;re truly ready to launch or just very, very optimistic.</p>
     </div>
 
     <div class="feature-card">
@@ -554,7 +715,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       </div>
       <h3>Post-campaign retrospective</h3>
-      <p>Compare actual costs and backer counts to your projections. Carry the lessons into your next campaign instead of starting from scratch.</p>
+      <p>Compare actual costs and backer counts to your projections so the next campaign starts from lessons, not vibes. Future-you will thank present-you.</p>
     </div>
 
   </div>
@@ -562,8 +723,8 @@
 
 <!-- ============ INSTALL ============ -->
 <section>
-  <h2 class="section-heading">Getting started</h2>
-  <p class="section-sub">Download the app for your platform and you&rsquo;re up and running in under two minutes.</p>
+  <h2 class="section-heading">Up and running in two minutes</h2>
+  <p class="section-sub">Download the installer, accept the (one-time) security warning, and start planning. No account creation, no email confirmation, no &ldquo;welcome to our newsletter.&rdquo;</p>
   <div class="install-grid">
     <div class="install-card">
       <h3>
@@ -598,15 +759,82 @@
   </div>
 </section>
 
+<!-- ============ FAQ ============ -->
+<section>
+  <h2 class="section-heading">Questions you might be having</h2>
+  <p class="section-sub">The honest answers to the things every indie author asks before downloading another desktop app.</p>
+  <div class="faq-list">
+
+    <details class="faq-item">
+      <summary>Is it really free? Where&rsquo;s the catch?</summary>
+      <div class="faq-body">
+        Really free. No subscription, no in-app purchases, no &ldquo;pro tier&rdquo; gating the useful features. KickFlip is MIT-licensed and the source is on GitHub &mdash; you can read every line yourself. The catch is there is no catch.
+      </div>
+    </details>
+
+    <details class="faq-item">
+      <summary>Where does my campaign data go?</summary>
+      <div class="faq-body">
+        Into a local SQLite file on your machine. KickFlip makes zero network requests &mdash; no analytics, no telemetry, no cloud sync. If your laptop is offline, KickFlip works exactly the same. The flip side: back up the file yourself if it matters to you.
+      </div>
+    </details>
+
+    <details class="faq-item">
+      <summary>Do I need to be a spreadsheet person to use this?</summary>
+      <div class="faq-body">
+        No. The whole point is to spare you that. Type your numbers into the relevant fields &mdash; pledge amounts, page counts, shipping rates &mdash; and KickFlip handles the formulas. You&rsquo;ll see the math, but you don&rsquo;t have to write it.
+      </div>
+    </details>
+
+    <details class="faq-item">
+      <summary>What if I&rsquo;m not launching on Kickstarter?</summary>
+      <div class="faq-body">
+        KickFlip is built around Kickstarter&rsquo;s fee structure (5% platform + ~3% payment processing), but the margin, shipping, and fulfillment thinking transfers cleanly to BackerKit, Indiegogo, or even a direct pre-order. Just adjust the fees and you&rsquo;re modeling whatever platform you like.
+      </div>
+    </details>
+
+    <details class="faq-item">
+      <summary>Can I run more than one campaign?</summary>
+      <div class="faq-body">
+        Yes &mdash; as many as you want. The sidebar lets you create, rename, duplicate, and delete campaigns. Useful for series, multiple editions, or A/B-ing different reward structures before you commit to one.
+      </div>
+    </details>
+
+    <details class="faq-item">
+      <summary>Why isn&rsquo;t the app code-signed?</summary>
+      <div class="faq-body">
+        Apple Developer and Microsoft signing certificates run a few hundred dollars a year, and KickFlip is free. The one-time security workaround on each platform takes about ten seconds. The source is open if you&rsquo;d like to verify nothing untoward is happening &mdash; no obfuscation, no bundled trackers, no surprises.
+      </div>
+    </details>
+
+    <details class="faq-item">
+      <summary>Will my data survive an app update?</summary>
+      <div class="faq-body">
+        Yes. KickFlip stores campaigns in your user data folder, which sits outside the app bundle. Updates replace the app, not your work. Schema migrations are handled automatically.
+      </div>
+    </details>
+
+    <details class="faq-item">
+      <summary>I found a bug / want a feature. What now?</summary>
+      <div class="faq-body">
+        Open an issue on <a href="https://github.com/xavierschwindtwrites-ai/kickflip/issues">GitHub</a>, or email me directly at <a href="mailto:xavier@hairyfeetwebsites.com">xavier@hairyfeetwebsites.com</a>. KickFlip is built and maintained by an indie author for indie authors, so your bug reports and feature requests shape the roadmap directly &mdash; I read every one and try to ship the fixes that make the biggest difference.
+      </div>
+    </details>
+
+  </div>
+</section>
+
 <!-- ============ COMMUNITY ============ -->
 <section>
-  <h2 class="section-heading">Built for authors, by an author</h2>
+  <h2 class="section-heading">Built by an author, for the rest of us</h2>
   <div class="community-content">
     <p>
-      KickFlip is a free community tool. I built it while planning my own
-      Kickstarter campaign because I couldn&rsquo;t find anything that answered
-      the questions I actually had &mdash; what will I net per backer, how many
-      followers do I need, what happens if I hit breakout? It will always be free.
+      I built KickFlip while planning my own Kickstarter, because the answer
+      to &ldquo;will I actually break even on shipping to the UK?&rdquo; was buried
+      in a spreadsheet I kept losing in iCloud. Every existing tool wanted my
+      email; none of them answered the questions I actually had. So I made one
+      that does &mdash; and gave it away. If it saves you a weekend of math,
+      pay it forward and tell another indie author.
     </p>
     <div class="community-links">
       <a class="btn" href="https://github.com/xavierschwindtwrites-ai/kickflip/releases/latest">
