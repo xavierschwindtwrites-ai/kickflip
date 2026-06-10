@@ -40,9 +40,23 @@ const App: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const campaign = await window.kickflip.ensureCampaign();
-      setCampaignId(campaign.id);
-      await refreshCampaigns();
+      try {
+        const campaign = await window.kickflip.ensureCampaign();
+        const list = await refreshCampaigns();
+        if (campaign && typeof campaign.id === 'number') {
+          setCampaignId(campaign.id);
+        } else if (list.length > 0) {
+          // Fall back to the first campaign rather than hanging on a blank screen
+          setCampaignId(list[0].id);
+        }
+      } catch (err) {
+        console.error('Startup failed:', err);
+        // Last resort: try to show whatever campaigns exist
+        try {
+          const list = await refreshCampaigns();
+          if (list.length > 0) setCampaignId(list[0].id);
+        } catch { /* leave empty state visible */ }
+      }
     })();
   }, [refreshCampaigns]);
 

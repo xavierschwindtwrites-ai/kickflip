@@ -89,9 +89,11 @@ function getDb(): SqlJsDatabase {
 export function dbRun(sql: string, params?: unknown[]): { lastInsertRowid: number } {
   const d = getDb();
   d.run(sql, params);
-  persist();
+  // Read last_insert_rowid BEFORE persist(): sql.js export() closes and
+  // reopens the connection, which resets last_insert_rowid to 0.
   const row = d.exec('SELECT last_insert_rowid() AS id');
   const lastId = row.length > 0 ? (row[0].values[0][0] as number) : 0;
+  persist();
   return { lastInsertRowid: lastId };
 }
 

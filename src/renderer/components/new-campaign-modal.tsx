@@ -11,11 +11,13 @@ const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ onCreated, onCancel
   const [title, setTitle] = useState('');
   const [launchDate, setLaunchDate] = useState('');
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
 
   const handleCreate = useCallback(async () => {
     const trimmed = title.trim();
     if (!trimmed || creating) return;
     setCreating(true);
+    setError('');
 
     const initialData: CampaignData = {
       bookSetup: {
@@ -25,11 +27,20 @@ const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ onCreated, onCancel
       },
     };
 
-    const campaign = await window.kickflip.createCampaign(
-      trimmed,
-      JSON.stringify(initialData),
-    );
-    onCreated(campaign.id);
+    try {
+      const campaign = await window.kickflip.createCampaign(
+        trimmed,
+        JSON.stringify(initialData),
+      );
+      if (!campaign || typeof campaign.id !== 'number') {
+        throw new Error('Campaign was not returned after creation');
+      }
+      onCreated(campaign.id);
+    } catch (err) {
+      setCreating(false);
+      setError('Could not create the campaign. Please try again — if it keeps failing, restart KickFlip.');
+      console.error('createCampaign failed:', err);
+    }
   }, [title, launchDate, creating, onCreated]);
 
   const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -68,6 +79,8 @@ const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ onCreated, onCancel
           />
         </div>
 
+        {error && <p className="modal-error">{error}</p>}
+
         <div className="modal-actions">
           <button className="modal-btn-cancel" onClick={onCancel}>Cancel</button>
           <button
@@ -75,6 +88,7 @@ const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ onCreated, onCancel
             onClick={handleCreate}
             disabled={!title.trim() || creating}
           >
+            {creating && <span className="btn-spinner" aria-hidden="true" />}
             {creating ? 'Creating\u2026' : 'Create Campaign'}
           </button>
         </div>
