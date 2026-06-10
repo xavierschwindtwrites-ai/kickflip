@@ -15,14 +15,20 @@ import { rendererConfig } from './webpack.renderer.config';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: './assets/icon', // .icns / .ico appended per platform
     extraResource: [
       './node_modules/sql.js/dist/sql-asm.js',
     ],
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
-    new MakerDMG({}),
+    new MakerSquirrel({
+      setupIcon: './assets/icon.ico',
+      iconUrl: 'https://raw.githubusercontent.com/xavierschwindtwrites-ai/kickflip/main/assets/icon.ico',
+    }),
+    new MakerDMG({
+      icon: './assets/icon.icns',
+    }),
     new MakerZIP({}, ['darwin']),
     new MakerDeb({}),
     new MakerRpm({}),
