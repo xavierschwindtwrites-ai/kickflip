@@ -12,12 +12,11 @@ import type {
 import {
   defaultRetrospective,
   DEFAULT_BOOK_SETUP,
+  totalFeeRate,
   defaultPrinterQuotes,
   defaultPricingTiers,
   defaultShippingPlanner,
 } from '../../types/campaign';
-
-const TOTAL_FEE = 0.08;
 
 interface RetrospectiveProps {
   campaignId: number;
@@ -146,6 +145,7 @@ const Retrospective: React.FC<RetrospectiveProps> = ({ campaignId }) => {
     ? intlRegions.reduce((s, r) => s + ((r.backerPercent ?? 0) / 100) * (r.costPerCopy ?? 0), 0) * expectedBackers
     : 0;
 
+  const TOTAL_FEE = totalFeeRate(bookSetup);
   const projectedGross = expectedBackers * pledgeAmount;
   const projectedFees = projectedGross * TOTAL_FEE;
 
@@ -372,7 +372,7 @@ const Retrospective: React.FC<RetrospectiveProps> = ({ campaignId }) => {
                     })}
                     {/* Platform fees row */}
                     <tr className="rt-ct-auto-row">
-                      <td className="rt-ct-label-cell">Platform fees (8%)</td>
+                      <td className="rt-ct-label-cell">Platform fees</td>
                       <td className="rt-ct-proj-cell">{projected.platformFees !== null ? fmtDollar(projected.platformFees) : '\u2014'}</td>
                       <td className="rt-ct-actual-cell rt-ct-auto-val">{totalRaised > 0 ? fmtDollar(actualPlatformFees) : '\u2014'}</td>
                       <td className={`rt-ct-diff-cell${projected.platformFees !== null && totalRaised > 0 ? (actualPlatformFees <= projected.platformFees ? ' good' : ' bad') : ''}`}>

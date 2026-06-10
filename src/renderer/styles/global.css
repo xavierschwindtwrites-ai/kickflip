@@ -72,6 +72,25 @@ html, body, #root {
   background: #c04e1b;
 }
 
+.sidebar-import-btn {
+  margin: -8px 12px 16px;
+  padding: 6px 12px;
+  background: transparent;
+  color: #6b6b73;
+  border: 1px solid #d8d8de;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-import-btn:hover {
+  background: #f0f0f2;
+  color: #1a1a1a;
+}
+
 /* Campaign section */
 .sidebar-section {
   padding: 0 12px;
@@ -3980,4 +3999,159 @@ html, body, #root {
 .lt-remove-btn:hover {
   color: #c4402a;
   background: rgba(196, 64, 42, 0.06);
+}
+
+/* ============ Campaign Summary ============ */
+.cs-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px 16px;
+}
+
+.cs-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.cs-print-btn {
+  padding: 8px 16px;
+  background: #E8622A;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.cs-print-btn:hover { background: #d4571f; }
+
+.cs-sheet {
+  background: #fff;
+  border: 1px solid #e2e2e6;
+  border-radius: 10px;
+  padding: 32px 36px;
+  max-width: 720px;
+  margin: 0 0 32px;
+}
+
+.cs-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  border-bottom: 2px solid #1a1a1a;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.cs-campaign-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 2px;
+}
+
+.cs-book-line {
+  font-size: 13px;
+  color: #6b6b73;
+}
+
+.cs-key-numbers { display: flex; gap: 24px; }
+
+.cs-key-num { text-align: right; }
+
+.cs-key-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8c8c94;
+}
+
+.cs-key-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cs-section { margin-bottom: 22px; }
+
+.cs-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #E8622A;
+  margin-bottom: 8px;
+}
+
+.cs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.cs-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #8c8c94;
+  padding: 4px 10px 4px 0;
+  border-bottom: 1px solid #e2e2e6;
+}
+
+.cs-table td {
+  padding: 5px 10px 5px 0;
+  border-bottom: 1px solid #f0f0f2;
+}
+
+.cs-pos { color: #1a7d3a; font-weight: 600; }
+.cs-neg { color: #c4402a; font-weight: 600; }
+
+.cs-list {
+  font-size: 13px;
+  padding-left: 20px;
+  line-height: 1.8;
+}
+
+.cs-footnote {
+  font-size: 11.5px;
+  color: #8c8c94;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.cs-generated {
+  font-size: 11px;
+  color: #b0b0b6;
+  margin-top: 24px;
+  text-align: center;
+}
+
+/* Print: show only the summary sheet */
+@media print {
+  .sidebar, .cs-header { display: none !important; }
+  .content-area { overflow: visible !important; }
+  .form-scroll { overflow: visible !important; padding: 0 !important; }
+  .cs-sheet {
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    max-width: none;
+    margin: 0;
+  }
+  body { background: #fff; }
 }

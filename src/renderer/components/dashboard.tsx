@@ -14,6 +14,7 @@ import type {
 } from '../../types/campaign';
 import {
   DEFAULT_BOOK_SETUP,
+  totalFeeRate,
   defaultPrinterQuotes,
   defaultPricingTiers,
   defaultShippingPlanner,
@@ -22,8 +23,6 @@ import {
   defaultFulfillmentPlanner,
   defaultRetrospective,
 } from '../../types/campaign';
-
-const TOTAL_FEE = 0.08;
 
 interface DashboardProps {
   campaignId: number;
@@ -83,6 +82,8 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
   }
 
   // ===== DERIVED DATA =====
+
+  const TOTAL_FEE = totalFeeRate(bookSetup);
 
   // Campaign header
   const campaignTitle = bookSetup.campaignTitle || 'Untitled Campaign';

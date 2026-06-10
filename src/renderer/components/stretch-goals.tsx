@@ -31,13 +31,12 @@ import {
   defaultStretchGoals,
   createStretchGoal,
   DEFAULT_BOOK_SETUP,
+  totalFeeRate,
   defaultPricingTiers,
   defaultPrinterQuotes,
   defaultShippingPlanner,
   defaultPromotionalTools,
 } from '../../types/campaign';
-
-const TOTAL_FEE = 0.08;
 
 const GOAL_TYPES: StretchGoalType[] = [
   'Interior illustrations',
@@ -183,6 +182,7 @@ const StretchGoals: React.FC<StretchGoalsProps> = ({ campaignId }) => {
     sum + ((r.backerPercent ?? 0) / 100) * (r.costPerCopy ?? 0), 0);
   const bufferRate = (shippingPlanner.bufferPercent ?? 0) / 100;
 
+  const TOTAL_FEE = totalFeeRate(bookSetup);
   const tierMargins = pricingTiers.tiers
     .filter(t => (t.pledgeAmount ?? 0) > 0)
     .map(t => {

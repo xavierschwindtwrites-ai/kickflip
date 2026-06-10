@@ -26,7 +26,7 @@ const PrelaunchTracker: React.FC<PrelaunchTrackerProps> = ({ campaignId }) => {
           const p: CampaignData = JSON.parse(campaign.data);
           if (p.prelaunchTracker) setForm({ ...defaultPrelaunchTracker(), ...p.prelaunchTracker });
           if (p.bookSetup) setBookSetup({ ...DEFAULT_BOOK_SETUP, ...p.bookSetup });
-        } catch { }
+        } catch { /* ignore */ }
       }
       setTimeout(() => { isInitialLoad.current = false; }, 50);
     })();
@@ -43,7 +43,7 @@ const PrelaunchTracker: React.FC<PrelaunchTrackerProps> = ({ campaignId }) => {
       try {
         const c = await window.kickflip.loadCampaign(campaignId);
         if (c?.data) existing = JSON.parse(c.data);
-      } catch { }
+      } catch { /* ignore */ }
       existing.prelaunchTracker = form;
       await window.kickflip.saveCampaignData(campaignId, JSON.stringify(existing));
       setSaveStatus('saved');

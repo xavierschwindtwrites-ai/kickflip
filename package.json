@@ -1,7 +1,7 @@
 {
   "name": "kickflip",
   "productName": "KickFlip",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A free Kickstarter planning tool for indie authors",
   "main": ".webpack/main",
   "private": true,
@@ -48,6 +48,7 @@
     "electron-squirrel-startup": "^1.0.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "sql.js": "^1.14.1"
+    "sql.js": "^1.14.1",
+    "update-electron-app": "^3.2.0"
   }
 }

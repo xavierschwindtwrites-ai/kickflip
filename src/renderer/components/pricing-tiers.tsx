@@ -12,11 +12,8 @@ import {
   createRewardTier,
   TIER_INCLUDES_OPTIONS,
   DEFAULT_BOOK_SETUP,
+  totalFeeRate,
 } from '../../types/campaign';
-
-const KS_FEE = 0.05;
-const PROCESSING_FEE = 0.03;
-const TOTAL_FEE = KS_FEE + PROCESSING_FEE;
 
 interface PricingTiersProps {
   campaignId: number;
@@ -136,6 +133,11 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
     );
   }
 
+  const TOTAL_FEE = totalFeeRate(bookSetup);
+  const platformPct = bookSetup.platformFeePercent ?? 5;
+  const paymentPct = bookSetup.paymentFeePercent ?? 3;
+  const totalPctLabel = `${(TOTAL_FEE * 100).toFixed(TOTAL_FEE * 100 % 1 === 0 ? 0 : 1)}%`;
+
   // KF-009: Aggregate backer-count-to-goal across all profitable tiers
   const profitableTiers = form.tiers.filter(t => {
     if (!t.pledgeAmount || t.pledgeAmount <= 0) return false;
@@ -175,8 +177,8 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
 
       <div className="form-scroll">
         <div className="form-helper-block pt-fee-note" style={{ maxWidth: 640, marginBottom: 24 }}>
-          <strong>Platform fees deducted from every pledge:</strong> Kickstarter 5% + Payment processing 3% = <strong>8% total</strong>.
-          All margin calculations below already account for this.
+          <strong>Platform fees deducted from every pledge:</strong> Platform {platformPct}% + Payment processing {paymentPct}% = <strong>{totalPctLabel} total</strong>.
+          All margin calculations below already account for this. Adjust these rates in Book Setup.
         </div>
 
         {/* CAMPAIGN GOAL */}
@@ -214,6 +216,7 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
               key={tier.id}
               tier={tier}
               canRemove={form.tiers.length > 1}
+              feeRate={TOTAL_FEE}
               printers={usablePrinters}
               printerLabel={printerLabel}
               getPrinter={getPrinter}
@@ -262,6 +265,7 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
 interface TierCardProps {
   tier: RewardTier;
   canRemove: boolean;
+  feeRate: number;
   printers: PodPrinter[];
   printerLabel: (p: PodPrinter) => string;
   getPrinter: (id: string) => PodPrinter | undefined;
@@ -271,13 +275,13 @@ interface TierCardProps {
 }
 
 const TierCard: React.FC<TierCardProps> = ({
-  tier, canRemove, printers, printerLabel, getPrinter,
+  tier, canRemove, feeRate, printers, printerLabel, getPrinter,
   onUpdate, onRemove, onToggleInclude,
 }) => {
   const isDigital = tier.isDigitalOnly ?? false;
   const printer = isDigital ? undefined : getPrinter(tier.printerId);
   const pledge = tier.pledgeAmount ?? 0;
-  const fees = Math.round(pledge * TOTAL_FEE * 100) / 100;
+  const fees = Math.round(pledge * feeRate * 100) / 100;
   const afterFees = Math.round((pledge - fees) * 100) / 100;
   const printCost = isDigital ? 0 : (printer?.unitCost ?? 0);
   const domShip = isDigital ? 0 : (printer?.domesticShipping ?? 0);
@@ -416,7 +420,7 @@ const TierCard: React.FC<TierCardProps> = ({
             <span>${pledge.toFixed(2)}</span>
           </div>
           <div className="pt-margin-row pt-margin-deduct">
-            <span>Kickstarter + processing (8%)</span>
+            <span>Kickstarter + processing ({(feeRate * 100).toFixed(feeRate * 100 % 1 === 0 ? 0 : 1)}%)</span>
             <span>&minus; ${fees.toFixed(2)}</span>
           </div>
 

@@ -12,6 +12,9 @@ No account. No subscription. Your data stays on your computer.
 - **Stretch goal ladder** — build stretch goals that are actually funded by the backers who unlock them
 - **Launch readiness check** — a checklist that pulls from your real data
 - **Post-campaign retrospective** — compare actuals to projections and carry lessons forward
+- **Printable campaign summary** — a one-page plan you can print or save as PDF
+- **Export / import** — back up campaigns to JSON files or move them between machines
+- **Configurable fees** — adjust platform and payment processing rates for your country
 
 ## Download
 

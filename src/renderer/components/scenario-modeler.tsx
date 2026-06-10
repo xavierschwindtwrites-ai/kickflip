@@ -12,13 +12,12 @@ import type {
 } from '../../types/campaign';
 import {
   DEFAULT_BOOK_SETUP,
+  totalFeeRate,
   defaultPrinterQuotes,
   defaultPricingTiers,
   defaultShippingPlanner,
   defaultScenarioModeler,
 } from '../../types/campaign';
-
-const TOTAL_FEE = 0.08;
 
 interface ScenarioModelerProps {
   campaignId: number;
@@ -129,6 +128,8 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
   }
 
   // Derived data
+  const TOTAL_FEE = totalFeeRate(bookSetup);
+  const feePctLabel = `${(TOTAL_FEE * 100).toFixed(TOTAL_FEE * 100 % 1 === 0 ? 0 : 1)}%`;
   const podPrinters = printerQuotes.podPrinters.filter(p => p.unitCost !== null && p.unitCost > 0);
   const primaryPod = firstPod!;
 
@@ -263,7 +264,7 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
 
               <div className="sm-card-rows">
                 <Row label="Gross raised" value={sc.gross} />
-                <Row label="KS + processing (8%)" value={-sc.fees} muted />
+                <Row label={`KS + processing (${feePctLabel})`} value={-sc.fees} muted />
                 <Row label={`Payment failures (${failureRate}%)`} value={-sc.failures} muted />
                 <Row label="Printing costs" value={-sc.printing} muted />
                 <Row label="Shipping costs" value={-sc.shipping} muted />
@@ -480,7 +481,7 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
                 </div>
                 <div className="pt-margin-divider" />
                 <div className="pt-margin-row pt-margin-deduct">
-                  <span>Divided by (1 &minus; 8% fees)</span>
+                  <span>Divided by (1 &minus; {feePctLabel} fees)</span>
                   <span>&divide; {(1 - TOTAL_FEE).toFixed(2)}</span>
                 </div>
                 <div className="pt-margin-divider" />

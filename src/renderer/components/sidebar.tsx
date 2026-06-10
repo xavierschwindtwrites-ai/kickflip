@@ -15,6 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   'Retrospective',
   'Pre-launch Tracker',
   'Live Tracker',
+  'Campaign Summary',
 ];
 
 interface SidebarProps {
@@ -27,6 +28,8 @@ interface SidebarProps {
   onDeleteCampaign: (id: number, title: string) => void;
   onRenameCampaign: (id: number, newTitle: string) => void;
   onDuplicateCampaign: (id: number) => void;
+  onExportCampaign: (id: number) => void;
+  onImportCampaign: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -39,6 +42,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onDeleteCampaign,
   onRenameCampaign,
   onDuplicateCampaign,
+  onExportCampaign,
+  onImportCampaign,
 }) => {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [renamingId, setRenamingId] = useState<number | null>(null);
@@ -93,6 +98,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <button className="sidebar-new-btn" onClick={onNewCampaign}>+ New Campaign</button>
+      <button className="sidebar-import-btn" onClick={onImportCampaign}>Import Campaign&hellip;</button>
 
       <div className="sidebar-section">
         <div className="sidebar-section-label">Campaigns</div>
@@ -157,6 +163,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                   >
                     Duplicate
                   </button>
+                  <button
+                    className="campaign-dropdown-item"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setOpenMenuId(null);
+                      onExportCampaign(c.id);
+                    }}
+                  >
+                    Export&hellip;
+                  </button>
                   <div className="campaign-dropdown-divider" />
                   <button
                     className="campaign-dropdown-item campaign-dropdown-item--danger"
@@ -189,7 +205,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       <div className="sidebar-footer">
-        <span className="sidebar-version">v0.2.0</span>
+        <span className="sidebar-version">v0.2.1</span>
       </div>
     </aside>
   );

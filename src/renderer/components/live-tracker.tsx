@@ -38,7 +38,7 @@ const LiveTracker: React.FC<LiveTrackerProps> = ({ campaignId }) => {
           if (p.liveCampaign) setForm({ ...defaultLiveCampaign(), ...p.liveCampaign });
           if (p.pricingTiers) setPricingTiers(p.pricingTiers);
           if (p.promotionalTools) setPromoTools({ ...defaultPromotionalTools(), ...p.promotionalTools });
-        } catch { }
+        } catch { /* ignore */ }
       }
       setTimeout(() => { isInitialLoad.current = false; }, 50);
     })();
@@ -55,7 +55,7 @@ const LiveTracker: React.FC<LiveTrackerProps> = ({ campaignId }) => {
       try {
         const c = await window.kickflip.loadCampaign(campaignId);
         if (c?.data) existing = JSON.parse(c.data);
-      } catch { }
+      } catch { /* ignore */ }
       existing.liveCampaign = form;
       await window.kickflip.saveCampaignData(campaignId, JSON.stringify(existing));
       setSaveStatus('saved');

@@ -12,6 +12,7 @@ import FulfillmentPlanner from './fulfillment-planner';
 import Retrospective from './retrospective';
 import PrelaunchTracker from './pre-launch-tracker';
 import LiveTracker from './live-tracker';
+import CampaignSummary from './campaign-summary';
 
 interface ContentAreaProps {
   activeNav: NavItem;
@@ -112,6 +113,14 @@ const ContentArea: React.FC<ContentAreaProps> = ({ activeNav, campaignId, onNavC
     return (
       <main className="content-area content-area--form">
         <LiveTracker campaignId={campaignId} />
+      </main>
+    );
+  }
+
+  if (activeNav === 'Campaign Summary') {
+    return (
+      <main className="content-area content-area--form">
+        <CampaignSummary campaignId={campaignId} />
       </main>
     );
   }

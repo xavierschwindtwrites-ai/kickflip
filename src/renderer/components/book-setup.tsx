@@ -44,6 +44,13 @@ function validate(data: BookSetupData): Warnings {
     else if (data.emailOpenRate > 100) w.emailOpenRate = 'Open rate cannot exceed 100%';
   }
 
+  if (data.platformFeePercent < 0 || data.platformFeePercent > 25) {
+    w.platformFeePercent = 'Platform fee should be between 0 and 25%';
+  }
+  if (data.paymentFeePercent < 0 || data.paymentFeePercent > 25) {
+    w.paymentFeePercent = 'Payment fee should be between 0 and 25%';
+  }
+
   const { conservativeEstimate: con, expectedEstimate: exp, breakoutEstimate: brk } = data;
   if (con !== null && exp !== null && con >= exp) {
     w.conservativeEstimate = 'Conservative should be less than Expected';
@@ -349,6 +356,50 @@ const BookSetup: React.FC<BookSetupProps> = ({ campaignId }) => {
           <p className="form-helper-block">
             These become your three planning scenarios throughout KickFlip.
             Conservative = safe floor. Expected = realistic target. Breakout = best case.
+          </p>
+        </section>
+
+        {/* PLATFORM FEES */}
+        <section className="form-section">
+          <h2 className="form-section-label">Platform Fees</h2>
+
+          <Field
+            label="Platform fee %"
+            helper="Kickstarter charges 5% in most countries"
+            warning={warnings.platformFeePercent}
+          >
+            <input
+              type="number"
+              className="form-input"
+              value={form.platformFeePercent}
+              onChange={e => updateField('platformFeePercent', e.target.value === '' ? 0 : Number(e.target.value))}
+              placeholder="5"
+              min={0}
+              max={25}
+              step={0.1}
+            />
+          </Field>
+
+          <Field
+            label="Payment processing fee %"
+            helper="Roughly 3% + per-pledge cents in the US; higher in some regions"
+            warning={warnings.paymentFeePercent}
+          >
+            <input
+              type="number"
+              className="form-input"
+              value={form.paymentFeePercent}
+              onChange={e => updateField('paymentFeePercent', e.target.value === '' ? 0 : Number(e.target.value))}
+              placeholder="3"
+              min={0}
+              max={25}
+              step={0.1}
+            />
+          </Field>
+
+          <p className="form-helper-block">
+            These rates flow into every margin, scenario, and pricing calculation in KickFlip.
+            Launching outside the US? Check Kickstarter&rsquo;s fee page for your country and adjust here.
           </p>
         </section>
       </div>

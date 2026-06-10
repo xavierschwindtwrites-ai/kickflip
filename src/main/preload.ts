@@ -17,4 +17,8 @@ contextBridge.exposeInMainWorld('kickflip', {
     ipcRenderer.invoke('campaign:rename', id, newTitle),
   duplicateCampaign: (id: number) =>
     ipcRenderer.invoke('campaign:duplicate', id),
+  exportCampaign: (id: number) =>
+    ipcRenderer.invoke('campaign:export', id),
+  importCampaign: () =>
+    ipcRenderer.invoke('campaign:import'),
 });

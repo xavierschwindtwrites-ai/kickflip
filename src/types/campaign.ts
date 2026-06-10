@@ -28,6 +28,17 @@ export interface BookSetupData {
   conservativeEstimate: number | null;
   expectedEstimate: number | null;
   breakoutEstimate: number | null;
+
+  // Platform fees (percentages; Kickstarter US default is 5 + 3)
+  platformFeePercent: number;
+  paymentFeePercent: number;
+}
+
+/** Combined platform + payment fee as a 0-1 rate, with US Kickstarter defaults. */
+export function totalFeeRate(bs: Pick<BookSetupData, 'platformFeePercent' | 'paymentFeePercent'>): number {
+  const platform = bs.platformFeePercent ?? 5;
+  const payment = bs.paymentFeePercent ?? 3;
+  return (platform + payment) / 100;
 }
 
 export type Currency = 'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD';
@@ -485,4 +496,6 @@ export const DEFAULT_BOOK_SETUP: BookSetupData = {
   conservativeEstimate: null,
   expectedEstimate: null,
   breakoutEstimate: null,
+  platformFeePercent: 5,
+  paymentFeePercent: 3,
 };

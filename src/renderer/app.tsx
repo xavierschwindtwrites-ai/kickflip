@@ -17,7 +17,8 @@ export type NavItem =
   | 'Fulfillment Planner'
   | 'Retrospective'
   | 'Pre-launch Tracker'
-  | 'Live Tracker';
+  | 'Live Tracker'
+  | 'Campaign Summary';
 
 export interface CampaignListItem {
   id: number;
@@ -88,6 +89,26 @@ const App: React.FC = () => {
     }
   }, [refreshCampaigns]);
 
+  const handleExportCampaign = useCallback(async (id: number) => {
+    const result = await window.kickflip.exportCampaign(id);
+    if (!result.ok && result.error) {
+      alert(result.error);
+    }
+  }, []);
+
+  const handleImportCampaign = useCallback(async () => {
+    const result = await window.kickflip.importCampaign();
+    if (!result.ok) {
+      if (result.error) alert(result.error);
+      return;
+    }
+    if (result.campaign) {
+      await refreshCampaigns();
+      setCampaignId(result.campaign.id);
+      setActiveNav('Dashboard');
+    }
+  }, [refreshCampaigns]);
+
   // No campaigns — prompt to create one
   if (campaignId === null && campaigns.length === 0) {
     return (
@@ -97,6 +118,9 @@ const App: React.FC = () => {
           <p>Create your first campaign to get started.</p>
           <button className="modal-btn-create" onClick={() => setShowNewModal(true)}>
             + New Campaign
+          </button>
+          <button className="modal-btn-cancel" onClick={handleImportCampaign}>
+            Import Campaign&hellip;
           </button>
         </div>
         {showNewModal && (
@@ -125,6 +149,8 @@ const App: React.FC = () => {
         onDeleteCampaign={handleDeleteCampaign}
         onRenameCampaign={handleRenameCampaign}
         onDuplicateCampaign={handleDuplicateCampaign}
+        onExportCampaign={handleExportCampaign}
+        onImportCampaign={handleImportCampaign}
       />
       <ContentArea activeNav={activeNav} campaignId={campaignId} onNavChange={setActiveNav} />
       {showNewModal && (

@@ -15,8 +15,6 @@ import {
   defaultPricingTiers,
 } from '../../types/campaign';
 
-const TOTAL_FEE = 0.08;
-
 interface ShippingPlannerProps {
   campaignId: number;
 }
