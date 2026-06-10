@@ -81,6 +81,18 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [scenarioModeler, campaignId]);
 
+  // KF-010: Weight edit handlers — hooks must run before any early returns
+  const updateWeight = useCallback((tierId: string, value: number) => {
+    setScenarioModeler(prev => ({
+      ...prev,
+      tierWeights: { ...prev.tierWeights, [tierId]: value },
+    }));
+  }, []);
+
+  const resetWeights = useCallback(() => {
+    setScenarioModeler(prev => ({ ...prev, tierWeights: {} }));
+  }, []);
+
   // Missing data checks
   const missingScreens: { label: string; nav: NavItem }[] = [];
   const hasEstimates = bookSetup.conservativeEstimate !== null;
@@ -232,18 +244,6 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
 
   const printerLabel = (p: PodPrinter) =>
     p.printerName === 'Other' ? (p.customName || 'Other') : (p.printerName || 'Unnamed');
-
-  // KF-010: Weight edit handler
-  const updateWeight = useCallback((tierId: string, value: number) => {
-    setScenarioModeler(prev => ({
-      ...prev,
-      tierWeights: { ...prev.tierWeights, [tierId]: value },
-    }));
-  }, []);
-
-  const resetWeights = useCallback(() => {
-    setScenarioModeler(prev => ({ ...prev, tierWeights: {} }));
-  }, []);
 
   const hasCustomWeights = activeTiers.some(t => scenarioModeler.tierWeights[t.id] !== undefined);
 
