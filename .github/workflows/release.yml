@@ -56,11 +56,16 @@ jobs:
       - name: Build Windows installer
         run: npm run make
 
+      # Upload the full Squirrel output: Setup.exe for new installs, plus
+      # RELEASES + .nupkg which the auto-updater requires to deliver updates
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: KickFlip-windows
-          path: out/make/squirrel.windows/**/*.exe
+          path: |
+            out/make/squirrel.windows/**/*.exe
+            out/make/squirrel.windows/**/*.nupkg
+            out/make/squirrel.windows/**/RELEASES
 
   release:
     needs: [build-mac, build-windows]
