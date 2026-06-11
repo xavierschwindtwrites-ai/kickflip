@@ -7,18 +7,17 @@ import './styles/global.css';
 
 export type NavItem =
   | 'Dashboard'
-  | 'Book Setup'
-  | 'Printer Quotes'
+  | 'Project Setup'
+  | 'Unit Costs'
   | 'Pricing & Tiers'
-  | 'Shipping Planner'
-  | 'Scenario Modeler'
+  | 'Shipping'
+  | 'Scenarios'
   | 'Stretch Goals'
-  | 'Promotional Tools'
-  | 'Fulfillment Planner'
-  | 'Retrospective'
-  | 'Pre-launch Tracker'
+  | 'Launch Plan'
   | 'Live Tracker'
-  | 'Campaign Summary';
+  | 'Fulfillment'
+  | 'Retrospective'
+  | 'Summary';
 
 export interface CampaignListItem {
   id: number;
@@ -68,7 +67,7 @@ const App: React.FC = () => {
   const handleCampaignCreated = useCallback(async (newId: number) => {
     await refreshCampaigns();
     setCampaignId(newId);
-    setActiveNav('Book Setup');
+    setActiveNav('Project Setup');
     setShowNewModal(false);
   }, [refreshCampaigns]);
 

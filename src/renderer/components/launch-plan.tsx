@@ -1,148 +1,38 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import type { NavItem } from '../app';
 import type {
   CampaignData,
   PromotionalToolsData,
+  PrelaunchTrackerData,
   OutreachContact,
   BookSetupData,
-  ReadinessItem,
 } from '../../types/campaign';
 import {
   defaultPromotionalTools,
+  defaultPrelaunchTracker,
   createOutreachContact,
   DEFAULT_BOOK_SETUP,
 } from '../../types/campaign';
 
-interface PromotionalToolsProps {
+const INDUSTRY_CONVERSION_RATE = 5; // percent of followers who back
+
+interface LaunchPlanProps {
   campaignId: number;
-  onNavChange: (item: 'Book Setup') => void;
+  onNavChange: (item: NavItem) => void;
 }
 
 const READINESS_ITEMS: { key: string; label: string; helper: string }[] = [
   { key: 'email500', label: 'Email list is at least 500 subscribers', helper: 'Under 500 makes funding uncertain unless you have strong social presence' },
-  { key: 'openRate', label: 'Email open rate is above 20%', helper: 'Below 20% suggests list engagement issues' },
-  { key: 'arcReaders', label: 'Have at least 3 ARC readers lined up', helper: 'Early reviews build launch momentum' },
-  { key: 'ksPage', label: 'Kickstarter page is fully written and proofread', helper: '' },
+  { key: 'arcReaders', label: 'Early readers or reviewers lined up', helper: 'Early reviews build launch momentum' },
+  { key: 'ksPage', label: 'Campaign page is fully written and proofread', helper: '' },
   { key: 'video', label: 'Campaign video is filmed and edited', helper: 'Campaigns with video fund at higher rates' },
   { key: 'socialPost', label: 'Social media announcement scheduled for launch day', helper: '' },
-  { key: 'friends5', label: 'At least 5 author friends or colleagues notified to share on launch day', helper: '' },
-  { key: 'preLaunchLink', label: 'Pre-launch landing page or Kickstarter preview link shared with email list', helper: '' },
-];
-
-const EMAIL_TEMPLATES = [
-  {
-    title: 'Pre-launch announcement',
-    subject: '[BOOK TITLE] is coming to Kickstarter \u2014 be first to know',
-    body: `Hi [FIRST NAME],
-
-I\u2019m thrilled to share that [BOOK TITLE] is coming to Kickstarter on [LAUNCH DATE]! This has been months in the making, and I can\u2019t wait to bring this story to life with your support.
-
-As a subscriber, you\u2019re the first to hear about it. The campaign will feature [BRIEF DESCRIPTION OF WHAT\u2019S INCLUDED \u2014 e.g. signed copies, exclusive artwork, limited editions]. Early backers will get the best prices and first access to stretch goal rewards.
-
-To make sure you don\u2019t miss launch day, click here to follow the Kickstarter pre-launch page: [LINK]. You\u2019ll get a notification the moment we go live.
-
-Thank you for being part of this journey \u2014 it means more than you know.
-
-[YOUR NAME]`,
-  },
-  {
-    title: 'Launch day email',
-    subject: 'We\u2019re LIVE \u2014 [BOOK TITLE] on Kickstarter right now',
-    body: `Hi [FIRST NAME],
-
-The day is here \u2014 [BOOK TITLE] is officially live on Kickstarter!
-
-\ud83d\udc49 Back the campaign now: [CAMPAIGN LINK]
-
-Here\u2019s what you can get as a backer:
-\u2022 [MAIN TIER NAME] ($[PRICE]): [WHAT\u2019S INCLUDED]
-\u2022 [OTHER TIER]: [BRIEF DESCRIPTION]
-
-We need [NUMBER] backers to hit our funding goal, and the first 48 hours are critical. If this sounds like something you\u2019d enjoy, backing now makes a huge difference.
-
-And if you know anyone who\u2019d love [GENRE/TOPIC], I\u2019d be incredibly grateful if you shared the link. Every share helps.
-
-Thank you for being here from the start.
-
-[YOUR NAME]`,
-  },
-  {
-    title: 'Funding milestone',
-    subject: '[X]% funded \u2014 thank you, and here\u2019s what\u2019s next',
-    body: `Hi [FIRST NAME],
-
-Incredible news \u2014 [BOOK TITLE] is now [X]% funded! We\u2019ve hit $[AMOUNT] with [NUMBER] backers, and I\u2019m overwhelmed by the support.
-
-Here\u2019s what\u2019s coming next: our first stretch goal at $[THRESHOLD] will unlock [STRETCH GOAL DESCRIPTION]. We\u2019re only $[DIFFERENCE] away!
-
-If you haven\u2019t backed yet, there\u2019s still time to grab your copy at the campaign price: [CAMPAIGN LINK]
-
-If you\u2019re already a backer, the best thing you can do right now is share the campaign with one person who\u2019d enjoy it. Word of mouth is how book campaigns succeed.
-
-Thank you for making this real.
-
-[YOUR NAME]`,
-  },
-  {
-    title: 'Final 48 hours',
-    subject: '48 hours left \u2014 last chance to back [BOOK TITLE]',
-    body: `Hi [FIRST NAME],
-
-This is it \u2014 [BOOK TITLE] closes in 48 hours, and once it\u2019s done, these prices and editions won\u2019t be available again.
-
-\ud83d\udc49 Back before it\u2019s too late: [CAMPAIGN LINK]
-
-Here\u2019s what you get:
-\u2022 [TIER 1]: $[PRICE] \u2014 [INCLUDES]
-\u2022 [TIER 2]: $[PRICE] \u2014 [INCLUDES]
-
-We\u2019ve unlocked [NUMBER] stretch goals so far, which means every backer gets [BONUS ITEMS].
-
-If you\u2019re already a backer \u2014 thank you. If you can share the campaign link one more time in the next 48 hours, it could make all the difference.
-
-Let\u2019s finish strong.
-
-[YOUR NAME]`,
-  },
-  {
-    title: 'Funded confirmation',
-    subject: 'We did it \u2014 [BOOK TITLE] is fully funded',
-    body: `Hi [FIRST NAME],
-
-I\u2019m so happy to share that [BOOK TITLE] has been fully funded! We raised $[TOTAL] from [NUMBER] backers \u2014 I still can\u2019t quite believe it.
-
-Here\u2019s what happens next:
-\u2022 Kickstarter charges all backers when the campaign officially closes on [END DATE]
-\u2022 I\u2019ll begin working with the printer in [MONTH] and expect to ship by [FULFILLMENT DATE]
-\u2022 You\u2019ll receive regular updates right here and on Kickstarter
-
-Thank you for believing in this project. Every pledge, every share, every kind word made this possible. I can\u2019t wait to get this book into your hands.
-
-With gratitude,
-[YOUR NAME]`,
-  },
-  {
-    title: 'Fulfillment update',
-    subject: 'Update on [BOOK TITLE] \u2014 here\u2019s where we are',
-    body: `Hi [FIRST NAME],
-
-I wanted to give you an honest update on where things stand with [BOOK TITLE].
-
-Printing: [STATUS \u2014 e.g. "Files have been sent to the printer and proofs are expected by [DATE]"]
-Shipping: [STATUS \u2014 e.g. "Domestic copies will ship first, starting around [DATE]. International shipments will follow about [X] weeks later."]
-Timeline: [STATUS \u2014 e.g. "We\u2019re currently on track / running about [X] weeks behind the original estimate due to [REASON]."]
-
-I know waiting is the hardest part, and I appreciate your patience. I\u2019m committed to keeping you in the loop every step of the way.
-
-If you have any questions, just reply to this email.
-
-Thank you for being part of this.
-
-[YOUR NAME]`,
-  },
+  { key: 'friends5', label: 'At least 5 friends or colleagues ready to share on launch day', helper: '' },
+  { key: 'preLaunchLink', label: 'Pre-launch page link shared with your email list', helper: '' },
 ];
 
 function formatDate(iso: string): string {
-  if (!iso) return '\u2014';
+  if (!iso) return '—';
   const d = new Date(iso + 'T00:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
@@ -153,11 +43,11 @@ function addDays(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavChange }) => {
+const LaunchPlan: React.FC<LaunchPlanProps> = ({ campaignId, onNavChange }) => {
   const [form, setForm] = useState<PromotionalToolsData>(defaultPromotionalTools);
+  const [prelaunch, setPrelaunch] = useState<PrelaunchTrackerData>(defaultPrelaunchTracker);
   const [bookSetup, setBookSetup] = useState<BookSetupData>({ ...DEFAULT_BOOK_SETUP });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialLoad = useRef(true);
@@ -170,16 +60,8 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
       if (campaign && campaign.data) {
         try {
           const p: CampaignData = JSON.parse(campaign.data);
-          if (p.promotionalTools) {
-            const saved = p.promotionalTools;
-            setForm({
-              ...defaultPromotionalTools(),
-              ...saved,
-              campaignLength: saved.campaignLength ?? 30,
-              useEndDateOverride: saved.useEndDateOverride ?? false,
-              overrideEndDate: saved.overrideEndDate ?? '',
-            });
-          }
+          if (p.promotionalTools) setForm({ ...defaultPromotionalTools(), ...p.promotionalTools });
+          if (p.prelaunchTracker) setPrelaunch({ ...defaultPrelaunchTracker(), ...p.prelaunchTracker });
           if (p.bookSetup) setBookSetup({ ...DEFAULT_BOOK_SETUP, ...p.bookSetup });
         } catch { /* */ }
       }
@@ -200,6 +82,7 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
         if (c && c.data) existing = JSON.parse(c.data);
       } catch { /* */ }
       existing.promotionalTools = form;
+      existing.prelaunchTracker = prelaunch;
       await window.kickflip.saveCampaignData(campaignId, JSON.stringify(existing));
       setSaveStatus('saved');
       fadeRef.current = setTimeout(() => setSaveStatus('idle'), 2000);
@@ -208,9 +91,37 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (fadeRef.current) clearTimeout(fadeRef.current);
     };
-  }, [form, campaignId]);
+  }, [form, prelaunch, campaignId]);
 
-  // --- Readiness check helpers ---
+  // --- Followers ---
+  const setPrelaunchField = useCallback(<K extends keyof PrelaunchTrackerData>(
+    key: K, value: PrelaunchTrackerData[K]
+  ) => {
+    setPrelaunch(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const conversionRate = prelaunch.conversionRateOverride ?? INDUSTRY_CONVERSION_RATE;
+  const conversionFactor = conversionRate / 100;
+  const estimatedBackers =
+    prelaunch.followerCount !== null ? Math.round(prelaunch.followerCount * conversionFactor) : null;
+  const followerProgress =
+    prelaunch.followerCount !== null && prelaunch.targetFollowerCount
+      ? Math.min(100, Math.round((prelaunch.followerCount / prelaunch.targetFollowerCount) * 100))
+      : null;
+
+  const scenarioTargets = [
+    { label: 'Conservative', backers: bookSetup.conservativeEstimate },
+    { label: 'Expected', backers: bookSetup.expectedEstimate },
+    { label: 'Breakout', backers: bookSetup.breakoutEstimate },
+  ]
+    .filter(s => s.backers !== null && conversionFactor > 0)
+    .map(s => ({
+      ...s,
+      backers: s.backers!,
+      followersNeeded: Math.ceil(s.backers! / conversionFactor),
+    }));
+
+  // --- Readiness ---
   const isItemChecked = (key: string): boolean => {
     const saved = form.readinessChecks.find(r => r.key === key);
     return saved ? saved.checked : false;
@@ -226,11 +137,8 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
     });
   }, []);
 
-  // Auto-check logic for first two items
   const emailSize = bookSetup.emailListSize ?? 0;
-  const emailRate = bookSetup.emailOpenRate ?? 0;
   const autoEmail = emailSize >= 500;
-  const autoRate = emailRate >= 20;
 
   // --- Outreach ---
   const addContact = useCallback(() => {
@@ -248,19 +156,8 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
     }));
   }, []);
 
-  // --- Copy template ---
-  const copyTemplate = useCallback((idx: number) => {
-    const t = EMAIL_TEMPLATES[idx];
-    const text = `Subject: ${t.subject}\n\n${t.body}`;
-    navigator.clipboard.writeText(text);
-    setCopiedIdx(idx);
-    setTimeout(() => setCopiedIdx(null), 2000);
-  }, []);
-
-  // --- Campaign timeline --- KF-005: end date override
+  // --- Timing ---
   const launchDate = bookSetup.targetLaunchDate;
-
-  // Calculate effective campaign length and end date
   let campaignLength = form.campaignLength ?? 30;
   let effectiveEndDate = '';
   if (form.useEndDateOverride && form.overrideEndDate && launchDate) {
@@ -285,45 +182,111 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
   return (
     <div className="pt-screen">
       <div className="pt-header">
-        <h1 className="pt-title">Promotional Tools</h1>
+        <h1 className="pt-title">Launch Plan</h1>
         <span className={`save-indicator ${saveStatus}`}>
-          {saveStatus === 'saving' && 'Saving\u2026'}
-          {saveStatus === 'saved' && '\u2713 Saved'}
+          {saveStatus === 'saving' && 'Saving…'}
+          {saveStatus === 'saved' && '✓ Saved'}
         </span>
       </div>
 
       <div className="form-scroll">
-        {/* 1. LAUNCH READINESS CHECK */}
+        {/* 1. PRE-LAUNCH FOLLOWERS */}
         <section className="form-section">
-          <h2 className="form-section-label">Launch Readiness Check</h2>
+          <h2 className="form-section-label">Pre-launch Followers</h2>
+          <p className="form-helper-block">
+            People who clicked &ldquo;Notify me on launch.&rdquo; Followers convert to backers far
+            better than cold traffic, so this is your best launch predictor.
+          </p>
+
+          <div className="printer-card-costs" style={{ maxWidth: 640 }}>
+            <div className="form-field">
+              <label className="form-label">Current followers</label>
+              <input
+                type="number"
+                className="form-input"
+                value={prelaunch.followerCount ?? ''}
+                onChange={e => setPrelaunchField('followerCount', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="0"
+                min={0}
+              />
+            </div>
+            <div className="form-field">
+              <label className="form-label">Target before launch</label>
+              <input
+                type="number"
+                className="form-input"
+                value={prelaunch.targetFollowerCount ?? ''}
+                onChange={e => setPrelaunchField('targetFollowerCount', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="e.g. 500"
+                min={0}
+              />
+            </div>
+            <div className="form-field">
+              <label className="form-label">Conversion rate %</label>
+              <input
+                type="number"
+                className="form-input"
+                value={prelaunch.conversionRateOverride ?? ''}
+                onChange={e => setPrelaunchField('conversionRateOverride', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder={`${INDUSTRY_CONVERSION_RATE}`}
+                min={0}
+                max={100}
+                step={0.1}
+              />
+            </div>
+          </div>
+
+          {followerProgress !== null && (
+            <div className="plt-progress-wrap">
+              <div className="plt-progress-bar">
+                <div className="plt-progress-fill" style={{ width: `${followerProgress}%` }} />
+              </div>
+              <span className="plt-progress-label">{followerProgress}% of target</span>
+            </div>
+          )}
+
+          {estimatedBackers !== null && (
+            <div className="plt-estimate-box">
+              <span className="plt-estimate-label">Estimated backers at launch</span>
+              <span className="plt-estimate-value">{estimatedBackers.toLocaleString()}</span>
+              <span className="plt-estimate-basis">
+                {prelaunch.followerCount?.toLocaleString()} followers &times; {conversionRate}% conversion
+              </span>
+            </div>
+          )}
+
+          {scenarioTargets.length > 0 && (
+            <div className="plt-scenario-rows" style={{ marginTop: 14 }}>
+              {scenarioTargets.map(s => {
+                const met = prelaunch.followerCount !== null && prelaunch.followerCount >= s.followersNeeded;
+                return (
+                  <div key={s.label} className={`plt-scenario-row${met ? ' plt-scenario-row--met' : ''}`}>
+                    <span className="plt-scenario-label">{s.label}</span>
+                    <span className="plt-scenario-backers">{s.backers.toLocaleString()} backers</span>
+                    <span className="plt-scenario-followers">{s.followersNeeded.toLocaleString()} followers needed</span>
+                    {met && <span className="plt-scenario-check">&#10003; On track</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* 2. LAUNCH READINESS */}
+        <section className="form-section">
+          <h2 className="form-section-label">Launch Readiness</h2>
 
           <div className="pt-checklist">
             {READINESS_ITEMS.map((item, idx) => {
-              // First two items have auto-check behavior
-              const isAuto = idx === 0 || idx === 1;
-              let autoChecked = false;
-              let autoLabel = '';
-              let autoWarning = '';
-
-              if (idx === 0 && emailSize > 0) {
-                autoChecked = autoEmail;
-                autoLabel = autoEmail ? `500+ subscribers \u2713` : '';
-                autoWarning = !autoEmail ? `You have ${emailSize.toLocaleString()} subscriber${emailSize !== 1 ? 's' : ''}` : '';
-              }
-              if (idx === 1 && emailRate > 0) {
-                autoChecked = autoRate;
-                autoLabel = autoRate ? `${emailRate}% open rate \u2713` : '';
-                autoWarning = !autoRate ? `Your open rate is ${emailRate}%` : '';
-              }
-
-              const checked = isAuto && (emailSize > 0 || emailRate > 0)
-                ? (idx === 0 ? autoChecked : (idx === 1 ? autoChecked : isItemChecked(item.key)))
-                : isItemChecked(item.key);
+              const isAuto = idx === 0 && emailSize > 0;
+              const checked = isAuto ? autoEmail : isItemChecked(item.key);
+              const autoWarning = isAuto && !autoEmail
+                ? `You have ${emailSize.toLocaleString()} subscriber${emailSize !== 1 ? 's' : ''}` : '';
 
               return (
-                <label key={item.key} className={`pt-check-item${checked ? ' checked' : ''}${isAuto && autoChecked ? ' auto-checked' : ''}`}>
-                  <span className={`pt-checkbox${checked ? ' checked' : ''}${isAuto && autoChecked ? ' auto' : ''}`}>
-                    {checked && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke={isAuto && autoChecked ? '#1a7d3a' : '#fff'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                <label key={item.key} className={`pt-check-item${checked ? ' checked' : ''}${isAuto && checked ? ' auto-checked' : ''}`}>
+                  <span className={`pt-checkbox${checked ? ' checked' : ''}${isAuto && checked ? ' auto' : ''}`}>
+                    {checked && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke={isAuto ? '#1a7d3a' : '#fff'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </span>
                   {!isAuto && (
                     <input
@@ -335,7 +298,7 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
                   )}
                   <div className="pt-check-content">
                     <span className="pt-check-label">
-                      {isAuto && autoLabel ? autoLabel : item.label}
+                      {isAuto && checked ? '500+ subscribers ✓' : item.label}
                     </span>
                     {item.helper && !autoWarning && (
                       <span className="pt-check-helper">{item.helper}</span>
@@ -350,26 +313,25 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
           </div>
         </section>
 
-        {/* 2. CAMPAIGN TIMING ADVISOR */}
+        {/* 3. CAMPAIGN TIMING */}
         <section className="form-section">
-          <h2 className="form-section-label">Campaign Timing Advisor</h2>
+          <h2 className="form-section-label">Campaign Timing</h2>
 
           <div className="pt-timing-grid">
             <div className="form-field">
               {!form.useEndDateOverride ? (
                 <>
-                  <label className="form-label">Campaign length</label>
-                  <select
+                  <label className="form-label">Campaign length (days)</label>
+                  <input
+                    type="number"
                     className="form-input"
                     value={form.campaignLength}
-                    onChange={e => setForm(prev => ({ ...prev, campaignLength: Number(e.target.value) }))}
-                  >
-                    <option value={20}>20 days</option>
-                    <option value={25}>25 days</option>
-                    <option value={30}>30 days</option>
-                  </select>
+                    onChange={e => setForm(prev => ({ ...prev, campaignLength: Math.max(1, Number(e.target.value)) }))}
+                    min={1}
+                    max={60}
+                  />
                   <span className="form-helper">
-                    Shorter campaigns create urgency. 30 days is standard for books.
+                    Shorter campaigns create urgency. 30 days is the most common choice.
                   </span>
                 </>
               ) : (
@@ -394,7 +356,6 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
                 </>
               )}
 
-              {/* KF-005: Override toggle */}
               <label className="pt-override-toggle" style={{ marginTop: 10 }}>
                 <input
                   type="checkbox"
@@ -415,18 +376,13 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
               <label className="form-label">Target launch date</label>
               <div className="pt-launch-display">
                 {launchDate ? formatDate(launchDate) : 'Not set'}
-                <button className="pt-link-btn" onClick={() => onNavChange('Book Setup')}>
-                  {launchDate ? 'Edit in Book Setup' : 'Set in Book Setup'}
+                <button className="pt-link-btn" onClick={() => onNavChange('Project Setup')}>
+                  {launchDate ? 'Edit in Project Setup' : 'Set in Project Setup'}
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="pt-day-rec">
-            Tuesday and Wednesday launches historically perform best for book campaigns.
-          </div>
-
-          {/* Timeline */}
           {launchDate && (
             <div className="pt-timeline">
               <div className="pt-timeline-line" />
@@ -442,29 +398,6 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
               ))}
             </div>
           )}
-        </section>
-
-        {/* 3. EMAIL TEMPLATE LIBRARY */}
-        <section className="form-section pt-section-wide">
-          <h2 className="form-section-label">Email Template Library</h2>
-
-          <div className="pt-templates">
-            {EMAIL_TEMPLATES.map((tpl, idx) => (
-              <div key={idx} className="pt-template-card">
-                <div className="pt-template-top">
-                  <div className="pt-template-title">{tpl.title}</div>
-                  <button
-                    className={`pt-copy-btn${copiedIdx === idx ? ' copied' : ''}`}
-                    onClick={() => copyTemplate(idx)}
-                  >
-                    {copiedIdx === idx ? 'Copied!' : 'Copy to clipboard'}
-                  </button>
-                </div>
-                <div className="pt-template-subject">Subject: {tpl.subject}</div>
-                <pre className="pt-template-body">{tpl.body}</pre>
-              </div>
-            ))}
-          </div>
         </section>
 
         {/* 4. OUTREACH TRACKER */}
@@ -556,4 +489,4 @@ const PromotionalTools: React.FC<PromotionalToolsProps> = ({ campaignId, onNavCh
   );
 };
 
-export default PromotionalTools;
+export default LaunchPlan;

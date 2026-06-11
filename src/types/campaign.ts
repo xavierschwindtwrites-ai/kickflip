@@ -13,7 +13,10 @@ export interface BookSetupData {
   emailListSize: number | null;
   emailOpenRate: number | null;
 
-  // Book Details
+  // What you're making — free text, works for books or any product
+  productNotes: string;
+
+  // Book Details (legacy — no longer shown in the UI, kept for old data)
   bookTitle: string;
   genre: string;
   pageCount: number | null;
@@ -484,6 +487,7 @@ export const DEFAULT_BOOK_SETUP: BookSetupData = {
   targetLaunchDate: '',
   emailListSize: null,
   emailOpenRate: null,
+  productNotes: '',
   bookTitle: '',
   genre: '',
   pageCount: null,

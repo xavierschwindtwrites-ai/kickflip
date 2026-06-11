@@ -146,11 +146,9 @@ const CampaignSummary: React.FC<CampaignSummaryProps> = ({ campaignId }) => {
           <div className="cs-sheet-header">
             <div>
               <h2 className="cs-campaign-name">{bookSetup.campaignTitle || 'Untitled Campaign'}</h2>
-              <p className="cs-book-line">
-                {bookSetup.bookTitle || 'Untitled book'}
-                {bookSetup.genre ? ` — ${bookSetup.genre}` : ''}
-                {bookSetup.pageCount ? ` — ${bookSetup.pageCount} pages` : ''}
-              </p>
+              {bookSetup.productNotes && (
+                <p className="cs-book-line">{bookSetup.productNotes}</p>
+              )}
             </div>
             <div className="cs-key-numbers">
               <div className="cs-key-num">
@@ -185,7 +183,7 @@ const CampaignSummary: React.FC<CampaignSummaryProps> = ({ campaignId }) => {
             <p className="cs-footnote">
               Net after {(TOTAL_FEE * 100).toFixed(0)}% fees, {shippingPlanner.paymentFailureRate}% payment failures,
               printing, weighted shipping, and {shippingPlanner.bufferPercent}% buffer. Equal tier weighting —
-              see Scenario Modeler for the full model.
+              see Scenarios for the full model.
             </p>
           </section>
 

@@ -7,7 +7,6 @@ import type {
   PricingTiersData,
   ShippingPlannerData,
   ScenarioModelerData,
-  PodPrinter,
   RewardTier,
 } from '../../types/campaign';
 import {
@@ -35,10 +34,6 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
   const [backerShortfall, setBackerShortfall] = useState(0);
   const [shippingOverrun, setShippingOverrun] = useState(0);
   const [stressFailureRate, setStressFailureRate] = useState<number | null>(null);
-
-  const [targetNet, setTargetNet] = useState<number | null>(null);
-  const [reversePrinterId, setReversePrinterId] = useState('');
-  const [reverseRegionId, setReverseRegionId] = useState('');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialLoad = useRef(true);
@@ -98,18 +93,18 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
   const firstPod = printerQuotes.podPrinters.find(p => p.unitCost !== null && p.unitCost > 0);
   const hasTier = pricingTiers.tiers.some(t => t.pledgeAmount !== null && t.pledgeAmount > 0);
   const hasRegions = shippingPlanner.regions.some(r => r.enabled && r.costPerCopy !== null);
-  if (!hasEstimates) missingScreens.push({ label: 'Book Setup', nav: 'Book Setup' });
-  if (!firstPod) missingScreens.push({ label: 'Printer Quotes', nav: 'Printer Quotes' });
+  if (!hasEstimates) missingScreens.push({ label: 'Project Setup', nav: 'Project Setup' });
+  if (!firstPod) missingScreens.push({ label: 'Unit Costs', nav: 'Unit Costs' });
   if (!hasTier) missingScreens.push({ label: 'Pricing & Tiers', nav: 'Pricing & Tiers' });
-  if (!hasRegions) missingScreens.push({ label: 'Shipping Planner', nav: 'Shipping Planner' });
+  if (!hasRegions) missingScreens.push({ label: 'Shipping', nav: 'Shipping' });
 
   if (loaded && missingScreens.length > 0) {
     return (
       <div className="sm-screen">
-        <div className="sm-header"><h1 className="sm-title">Scenario Modeler</h1></div>
+        <div className="sm-header"><h1 className="sm-title">Scenarios</h1></div>
         <div className="form-scroll">
           <div className="sm-missing">
-            <p>Complete the following screens first to unlock the Scenario Modeler:</p>
+            <p>Complete these screens first to unlock Scenarios:</p>
             <ul>
               {missingScreens.map(s => (
                 <li key={s.nav}>
@@ -124,15 +119,12 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
   }
 
   if (!loaded) {
-    return <div className="sm-screen"><div className="sm-header"><h1 className="sm-title">Scenario Modeler</h1></div></div>;
+    return <div className="sm-screen"><div className="sm-header"><h1 className="sm-title">Scenarios</h1></div></div>;
   }
 
   // Derived data
   const TOTAL_FEE = totalFeeRate(bookSetup);
   const feePctLabel = `${(TOTAL_FEE * 100).toFixed(TOTAL_FEE * 100 % 1 === 0 ? 0 : 1)}%`;
-  const podPrinters = printerQuotes.podPrinters.filter(p => p.unitCost !== null && p.unitCost > 0);
-  const primaryPod = firstPod!;
-
   const enabledRegions = shippingPlanner.regions.filter(r => r.enabled);
   const avgShippingCost = enabledRegions.reduce((sum, r) => {
     const pct = (r.backerPercent ?? 0) / 100;
@@ -215,43 +207,12 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
 
   const isStressed = backerShortfall !== 0 || shippingOverrun !== 0 || stressFailureRate !== null;
 
-  // Reverse pricing
-  const reversePrinter = podPrinters.find(p => p.id === reversePrinterId) || primaryPod;
-  const reverseRegion = enabledRegions.find(r => r.id === reverseRegionId) || enabledRegions[0];
-  const revPrintCost = reversePrinter?.unitCost ?? 0;
-  const revShipCost = reverseRegion?.costPerCopy ?? 0;
-  const revTarget = targetNet ?? 0;
-  const minPledge = revTarget > 0 ? Math.ceil(((revTarget + revPrintCost + revShipCost) / (1 - TOTAL_FEE)) * 100) / 100 : null;
-
-  // Cost floor
-  const conservativeBackers = bookSetup.conservativeEstimate ?? 0;
-  const costFloorDenom = 1 - TOTAL_FEE - bufferRate;
-  const costFloorPerBacker = costFloorDenom > 0 ? (printCost + weightedShipping) / costFloorDenom : 0;
-  const costFloor = Math.round(conservativeBackers * costFloorPerBacker * 100) / 100;
-  const goal = pricingTiers.goal ?? 0;
-
-  // Crossover
-  const firstOffset = printerQuotes.offsetPrinters.find(o => o.volumeRows.some(r => r.quantity && r.unitCost));
-  let crossoverCopies: number | null = null;
-  if (firstPod && firstOffset) {
-    const lowestRow = firstOffset.volumeRows
-      .filter(r => r.quantity && r.unitCost)
-      .sort((a, b) => (a.quantity ?? 0) - (b.quantity ?? 0))[0];
-    if (lowestRow && lowestRow.unitCost !== null && lowestRow.quantity !== null && primaryPod.unitCost! > lowestRow.unitCost) {
-      const offsetTotal = lowestRow.totalCost ?? (lowestRow.quantity * lowestRow.unitCost);
-      crossoverCopies = Math.ceil(offsetTotal / (primaryPod.unitCost! - lowestRow.unitCost));
-    }
-  }
-
-  const printerLabel = (p: PodPrinter) =>
-    p.printerName === 'Other' ? (p.customName || 'Other') : (p.printerName || 'Unnamed');
-
   const hasCustomWeights = activeTiers.some(t => scenarioModeler.tierWeights[t.id] !== undefined);
 
   return (
     <div className="sm-screen">
       <div className="sm-header">
-        <h1 className="sm-title">Scenario Modeler</h1>
+        <h1 className="sm-title">Scenarios</h1>
       </div>
 
       <div className="form-scroll">
@@ -418,152 +379,6 @@ const ScenarioModeler: React.FC<ScenarioModelerProps> = ({ campaignId, onNavChan
           </div>
         </section>
 
-        {/* 3. REVERSE PRICING ENGINE */}
-        <section className="form-section">
-          <h2 className="form-section-label">What Do I Need to Charge?</h2>
-
-          <div className="printer-card-costs" style={{ maxWidth: 640 }}>
-            <div className="form-field" style={{ flex: 1 }}>
-              <label className="form-label">Target net per backer ($)</label>
-              <input
-                type="number"
-                className="form-input"
-                value={targetNet ?? ''}
-                onChange={e => setTargetNet(e.target.value === '' ? null : Number(e.target.value))}
-                placeholder="5.00"
-                min={0}
-                step={0.5}
-              />
-            </div>
-            <div className="form-field" style={{ flex: 1 }}>
-              <label className="form-label">Printer</label>
-              <select
-                className="form-input form-select"
-                value={reversePrinterId || primaryPod.id}
-                onChange={e => setReversePrinterId(e.target.value)}
-              >
-                {podPrinters.map(p => <option key={p.id} value={p.id}>{printerLabel(p)}</option>)}
-              </select>
-            </div>
-            <div className="form-field" style={{ flex: 1 }}>
-              <label className="form-label">Shipping region</label>
-              <select
-                className="form-input form-select"
-                value={reverseRegionId || enabledRegions[0]?.id || ''}
-                onChange={e => setReverseRegionId(e.target.value)}
-              >
-                {enabledRegions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {minPledge !== null && revTarget > 0 && (
-            <div className="sm-reverse-result">
-              <div className="sm-reverse-answer">
-                You need to charge at least <strong>${minPledge.toFixed(2)}</strong>
-              </div>
-              <div className="pt-margin" style={{ marginTop: 10 }}>
-                <div className="pt-margin-row">
-                  <span>Target net per backer</span>
-                  <span>${revTarget.toFixed(2)}</span>
-                </div>
-                <div className="pt-margin-row pt-margin-deduct">
-                  <span>Print cost ({printerLabel(reversePrinter)})</span>
-                  <span>+ ${revPrintCost.toFixed(2)}</span>
-                </div>
-                <div className="pt-margin-row pt-margin-deduct">
-                  <span>Shipping ({reverseRegion?.name})</span>
-                  <span>+ ${revShipCost.toFixed(2)}</span>
-                </div>
-                <div className="pt-margin-row pt-margin-deduct">
-                  <span>Subtotal before fees</span>
-                  <span>${(revTarget + revPrintCost + revShipCost).toFixed(2)}</span>
-                </div>
-                <div className="pt-margin-divider" />
-                <div className="pt-margin-row pt-margin-deduct">
-                  <span>Divided by (1 &minus; {feePctLabel} fees)</span>
-                  <span>&divide; {(1 - TOTAL_FEE).toFixed(2)}</span>
-                </div>
-                <div className="pt-margin-divider" />
-                <div className="pt-margin-row pt-margin-total positive">
-                  <span>Minimum pledge</span>
-                  <span>${minPledge.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* 4. COST FLOOR */}
-        <section className="form-section">
-          <h2 className="form-section-label">Your Cost Floor</h2>
-          <div className="sm-floor-box">
-            <p>
-              Your cost floor is approximately <strong>${costFloor.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> —
-              this is the minimum raise where you break even on a conservative scenario
-              ({conservativeBackers} backers) with your current shipping plan.
-            </p>
-            {goal > 0 && goal < costFloor && (
-              <p className="sm-floor-warn">
-                Your goal (${goal.toLocaleString()}) is below your cost floor.
-                You could fund and still lose money.
-              </p>
-            )}
-            {goal > 0 && goal >= costFloor && (
-              <p className="sm-floor-ok">
-                Your goal (${goal.toLocaleString()}) covers your cost floor with
-                ${(goal - costFloor).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to spare.
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* 5. POD VS OFFSET */}
-        <section className="form-section" style={{ maxWidth: 'none' }}>
-          <h2 className="form-section-label">POD vs Offset Decision</h2>
-
-          {!firstOffset ? (
-            <div className="sp-crossover-box" style={{ marginTop: 0 }}>
-              <p>Add offset printer quotes on the Printer Quotes screen to see a comparison.</p>
-            </div>
-          ) : (
-            <>
-              <table className="sm-offset-table">
-                <thead>
-                  <tr>
-                    <th>Scenario</th>
-                    <th>Copies</th>
-                    <th>POD total</th>
-                    <th>Recommendation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scenarios.map(sc => {
-                    const podTotal = sc.backers * primaryPod.unitCost!;
-                    const recommend = crossoverCopies !== null && sc.backers >= crossoverCopies;
-                    return (
-                      <tr key={sc.label}>
-                        <td className="sp-exposure-name">{sc.label}</td>
-                        <td className="sp-exposure-num">{sc.backers.toLocaleString()}</td>
-                        <td className="sp-exposure-num">${podTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td>
-                          <span className={`sm-offset-tag ${recommend ? 'offset' : 'pod'}`}>
-                            {recommend ? 'Consider offset' : 'POD recommended'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {crossoverCopies !== null && (
-                <p className="form-helper" style={{ marginTop: 10 }}>
-                  Crossover point: offset becomes cheaper at ~{crossoverCopies.toLocaleString()} copies.
-                </p>
-              )}
-            </>
-          )}
-        </section>
       </div>
     </div>
   );

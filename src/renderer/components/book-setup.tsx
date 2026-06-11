@@ -2,29 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { BookSetupData, CampaignData } from '../../types/campaign';
 import { DEFAULT_BOOK_SETUP } from '../../types/campaign';
 
-const GENRES = [
-  'Fantasy',
-  'Science Fiction',
-  'Romance',
-  'Thriller',
-  'Mystery',
-  'Literary Fiction',
-  'Horror',
-  'Historical Fiction',
-  'Non-Fiction',
-  'Other',
-];
-
-const TRIM_SIZES = [
-  '5x8',
-  '5.5x8.5',
-  '6x9',
-  '5.06x7.81',
-  '4.25x6.87',
-  '8x10',
-  '8.5x11',
-];
-
 interface BookSetupProps {
   campaignId: number;
 }
@@ -33,16 +10,6 @@ type Warnings = Partial<Record<keyof BookSetupData, string>>;
 
 function validate(data: BookSetupData): Warnings {
   const w: Warnings = {};
-
-  if (data.pageCount !== null) {
-    if (data.pageCount < 24) w.pageCount = 'Page count must be at least 24';
-    else if (data.pageCount > 1200) w.pageCount = 'Page count must be 1,200 or fewer';
-  }
-
-  if (data.emailOpenRate !== null) {
-    if (data.emailOpenRate < 0) w.emailOpenRate = 'Open rate cannot be negative';
-    else if (data.emailOpenRate > 100) w.emailOpenRate = 'Open rate cannot exceed 100%';
-  }
 
   if (data.platformFeePercent < 0 || data.platformFeePercent > 25) {
     w.platformFeePercent = 'Platform fee should be between 0 and 25%';
@@ -141,14 +108,10 @@ const BookSetup: React.FC<BookSetupProps> = ({ campaignId }) => {
       updateField(key, val === '' ? null : Number(val) as any);
     };
 
-  const handleRadio = (key: keyof BookSetupData, value: string) => () => {
-    updateField(key, value as any);
-  };
-
   return (
     <div className="book-setup">
       <div className="book-setup-header">
-        <h1 className="book-setup-title">Book Setup</h1>
+        <h1 className="book-setup-title">Project Setup</h1>
         <span className={`save-indicator ${saveStatus}`}>
           {saveStatus === 'saving' && 'Saving\u2026'}
           {saveStatus === 'saved' && '\u2713 Saved'}
@@ -166,7 +129,7 @@ const BookSetup: React.FC<BookSetupProps> = ({ campaignId }) => {
               className="form-input"
               value={form.campaignTitle}
               onChange={handleText('campaignTitle')}
-              placeholder="e.g. My Awesome Book Launch"
+              placeholder="e.g. Everdarken — Special Edition"
             />
           </Field>
 
@@ -179,7 +142,7 @@ const BookSetup: React.FC<BookSetupProps> = ({ campaignId }) => {
             />
           </Field>
 
-          <Field label="Current subscribers" warning={warnings.emailListSize}>
+          <Field label="Email list size" helper="Your single best funding predictor — direct reach you own" warning={warnings.emailListSize}>
             <input
               type="number"
               className="form-input"
@@ -190,130 +153,24 @@ const BookSetup: React.FC<BookSetupProps> = ({ campaignId }) => {
             />
           </Field>
 
-          <Field
-            label="Email open rate %"
-            helper="Check your email platform dashboard for this"
-            warning={warnings.emailOpenRate}
-          >
-            <input
-              type="number"
-              className="form-input"
-              value={form.emailOpenRate ?? ''}
-              onChange={handleNumber('emailOpenRate')}
-              placeholder="0"
-              min={0}
-              max={100}
-              step={0.1}
-            />
-          </Field>
         </section>
 
-        {/* BOOK DETAILS */}
+        {/* WHAT YOU'RE MAKING */}
         <section className="form-section">
-          <h2 className="form-section-label">Book Details</h2>
+          <h2 className="form-section-label">What You&rsquo;re Making</h2>
 
-          <Field label="Book title">
-            <input
-              type="text"
-              className="form-input"
-              value={form.bookTitle}
-              onChange={handleText('bookTitle')}
-              placeholder="e.g. The Dragon's Gambit"
+          <Field
+            label="Project description"
+            helper="Formats, editions, page counts, components — whatever you need on hand when requesting quotes. Optional."
+          >
+            <textarea
+              className="form-input form-textarea"
+              value={form.productNotes}
+              onChange={e => updateField('productNotes', e.target.value)}
+              placeholder="e.g. 320-page 6x9 hardcover + paperback, foil cover, ribbon bookmark"
+              rows={3}
             />
           </Field>
-
-          <Field label="Genre">
-            <select
-              className="form-input form-select"
-              value={form.genre}
-              onChange={handleText('genre')}
-            >
-              <option value="">Select a genre</option>
-              {GENRES.map(g => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Page count" warning={warnings.pageCount}>
-            <input
-              type="number"
-              className="form-input"
-              value={form.pageCount ?? ''}
-              onChange={handleNumber('pageCount')}
-              placeholder="e.g. 320"
-              min={24}
-              max={1200}
-            />
-          </Field>
-
-          {/* KF-006: Per-format trim sizes */}
-          {(form.coverType === 'paperback' || form.coverType === 'both') && (
-            <Field label={form.coverType === 'both' ? 'Trim size — Paperback' : 'Trim size'}>
-              <select
-                className="form-input form-select"
-                value={form.trimSizePaperback || form.trimSize}
-                onChange={e => updateField('trimSizePaperback', e.target.value)}
-              >
-                <option value="">Select a trim size</option>
-                {TRIM_SIZES.map(s => (
-                  <option key={s} value={s}>{s}&quot;</option>
-                ))}
-              </select>
-            </Field>
-          )}
-
-          {(form.coverType === 'hardcover' || form.coverType === 'both') && (
-            <Field label={form.coverType === 'both' ? 'Trim size — Hardcover' : 'Trim size'}>
-              <select
-                className="form-input form-select"
-                value={form.trimSizeHardcover || form.trimSize}
-                onChange={e => updateField('trimSizeHardcover', e.target.value)}
-              >
-                <option value="">Select a trim size</option>
-                {TRIM_SIZES.map(s => (
-                  <option key={s} value={s}>{s}&quot;</option>
-                ))}
-              </select>
-            </Field>
-          )}
-
-          <RadioGroup
-            label="Interior"
-            name="interior"
-            options={[
-              { value: 'bw', label: 'Black & White' },
-              { value: 'color', label: 'Full Color' },
-            ]}
-            selected={form.interior}
-            onChange={handleRadio}
-            field="interior"
-          />
-
-          <RadioGroup
-            label="Cover finish"
-            name="coverFinish"
-            options={[
-              { value: 'matte', label: 'Matte' },
-              { value: 'glossy', label: 'Glossy' },
-            ]}
-            selected={form.coverFinish}
-            onChange={handleRadio}
-            field="coverFinish"
-          />
-
-          <RadioGroup
-            label="Cover type"
-            name="coverType"
-            options={[
-              { value: 'paperback', label: 'Paperback' },
-              { value: 'hardcover', label: 'Hardcover' },
-              { value: 'both', label: 'Both' },
-            ]}
-            selected={form.coverType}
-            onChange={handleRadio}
-            field="coverType"
-          />
         </section>
 
         {/* PRINT RUN ESTIMATE */}
@@ -422,40 +279,6 @@ const Field: React.FC<FieldProps> = ({ label, helper, warning, children }) => (
     {children}
     {helper && !warning && <span className="form-helper">{helper}</span>}
     {warning && <span className="form-warning">{warning}</span>}
-  </div>
-);
-
-interface RadioOption {
-  value: string;
-  label: string;
-}
-
-interface RadioGroupProps {
-  label: string;
-  name: string;
-  options: RadioOption[];
-  selected: string;
-  onChange: (key: keyof BookSetupData, value: string) => () => void;
-  field: keyof BookSetupData;
-}
-
-const RadioGroup: React.FC<RadioGroupProps> = ({ label, name, options, selected, onChange, field }) => (
-  <div className="form-field">
-    <label className="form-label">{label}</label>
-    <div className="radio-group">
-      {options.map(opt => (
-        <label key={opt.value} className={`radio-option${selected === opt.value ? ' active' : ''}`}>
-          <input
-            type="radio"
-            name={name}
-            value={opt.value}
-            checked={selected === opt.value}
-            onChange={onChange(field, opt.value)}
-          />
-          {opt.label}
-        </label>
-      ))}
-    </div>
   </div>
 );
 

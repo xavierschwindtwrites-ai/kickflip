@@ -161,7 +161,7 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
     );
     backersNeeded = Math.ceil(form.goal / weightedAvgPledge);
     if (profitableTiers.length > 1) {
-      backersNote = `Using equal weighting across ${profitableTiers.length} tiers. Customize distribution in Scenario Modeler.`;
+      backersNote = `Using equal weighting across ${profitableTiers.length} tiers. Customize distribution in Scenarios.`;
     }
   }
 
@@ -178,7 +178,7 @@ const PricingTiers: React.FC<PricingTiersProps> = ({ campaignId }) => {
       <div className="form-scroll">
         <div className="form-helper-block pt-fee-note" style={{ maxWidth: 640, marginBottom: 24 }}>
           <strong>Platform fees deducted from every pledge:</strong> Platform {platformPct}% + Payment processing {paymentPct}% = <strong>{totalPctLabel} total</strong>.
-          All margin calculations below already account for this. Adjust these rates in Book Setup.
+          All margin calculations below already account for this. Adjust these rates in Project Setup.
         </div>
 
         {/* CAMPAIGN GOAL */}
@@ -388,7 +388,7 @@ const TierCard: React.FC<TierCardProps> = ({
                 ))}
               </select>
             ) : (
-              <span className="form-helper">No printers added yet — visit Printer Quotes first</span>
+              <span className="form-helper">No quotes added yet — visit Unit Costs first</span>
             )}
           </div>
           <div className="form-field" style={{ flex: 1 }}>

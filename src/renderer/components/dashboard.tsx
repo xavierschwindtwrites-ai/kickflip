@@ -90,7 +90,6 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
   const launchDate = bookSetup.targetLaunchDate;
   const campaignStatus: CampaignStatus = retrospective.campaignStatus;
   const emailSize = bookSetup.emailListSize ?? 0;
-  const emailRate = bookSetup.emailOpenRate ?? 0;
 
   // Scenario modeler inputs
   const firstPod = printerQuotes.podPrinters.find(p => p.unitCost !== null && p.unitCost > 0);
@@ -113,14 +112,14 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
 
   // ===== COMPLETION PROGRESS =====
   const sections: { label: string; nav: NavItem; complete: boolean; optional?: boolean }[] = [
-    { label: 'Book Setup', nav: 'Book Setup', complete: !!(bookSetup.bookTitle && bookSetup.pageCount) },
-    { label: 'Printer Quotes', nav: 'Printer Quotes', complete: !!firstPod },
+    { label: 'Project Setup', nav: 'Project Setup', complete: !!(bookSetup.campaignTitle && bookSetup.conservativeEstimate !== null) },
+    { label: 'Unit Costs', nav: 'Unit Costs', complete: !!firstPod },
     { label: 'Pricing & Tiers', nav: 'Pricing & Tiers', complete: pricingTiers.tiers.some(t => t.pledgeAmount !== null && t.pledgeAmount > 0) },
-    { label: 'Shipping Planner', nav: 'Shipping Planner', complete: enabledRegions.some(r => r.costPerCopy !== null) && Math.abs(backerPctTotal - 100) < 1 },
-    { label: 'Scenario Modeler', nav: 'Scenario Modeler', complete: !!(bookSetup.bookTitle && bookSetup.pageCount && firstPod && bestTier && enabledRegions.some(r => r.costPerCopy !== null)) },
+    { label: 'Shipping', nav: 'Shipping', complete: enabledRegions.some(r => r.costPerCopy !== null) && Math.abs(backerPctTotal - 100) < 1 },
+    { label: 'Scenarios', nav: 'Scenarios', complete: !!(bookSetup.conservativeEstimate !== null && firstPod && bestTier && enabledRegions.some(r => r.costPerCopy !== null)) },
     { label: 'Stretch Goals', nav: 'Stretch Goals', complete: stretchGoals.goals.length > 0, optional: true },
-    { label: 'Promotional Tools', nav: 'Promotional Tools', complete: promoTools.readinessChecks.filter(r => r.checked).length >= 3 },
-    { label: 'Fulfillment Planner', nav: 'Fulfillment Planner', complete: Object.values(fulfillment.timeline).filter(v => !!v).length >= 3 },
+    { label: 'Launch Plan', nav: 'Launch Plan', complete: promoTools.readinessChecks.filter(r => r.checked).length >= 3 },
+    { label: 'Fulfillment', nav: 'Fulfillment', complete: Object.values(fulfillment.timeline).filter(v => !!v).length >= 3 },
   ];
   const completedCount = sections.filter(s => s.complete).length;
   const totalSections = sections.length;
@@ -135,25 +134,20 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
   scoreBreakdown.push({ label: 'Goal covers cost floor', points: 40, earned: costFloorCovered });
   if (costFloorCovered) confidence += 40;
 
-  // 10 pts: email 500+
+  // 15 pts: email 500+
   const email500 = emailSize >= 500;
-  scoreBreakdown.push({ label: 'Email list 500+ subscribers', points: 10, earned: email500 });
-  if (email500) confidence += 10;
+  scoreBreakdown.push({ label: 'Email list 500+ subscribers', points: 15, earned: email500 });
+  if (email500) confidence += 15;
 
-  // 10 pts: open rate 20%+
-  const rate20 = emailRate >= 20;
-  scoreBreakdown.push({ label: 'Email open rate 20%+', points: 10, earned: rate20 });
-  if (rate20) confidence += 10;
-
-  // 10 pts: all tiers positive margin
+  // 15 pts: all tiers positive margin
   const tiersWithPledge = pricingTiers.tiers.filter(t => t.pledgeAmount && t.pledgeAmount > 0);
   const allTiersPositive = tiersWithPledge.length > 0 && tiersWithPledge.every(t => {
     const printer = printerQuotes.podPrinters.find(p => p.id === t.printerId);
     const pCost = printer?.unitCost ?? printCost;
     return (t.pledgeAmount! * (1 - TOTAL_FEE) - pCost - avgShippingCost) > 0;
   });
-  scoreBreakdown.push({ label: 'All tiers have positive margins', points: 10, earned: allTiersPositive });
-  if (allTiersPositive) confidence += 10;
+  scoreBreakdown.push({ label: 'All tiers have positive margins', points: 15, earned: allTiersPositive });
+  if (allTiersPositive) confidence += 15;
 
   // 10 pts: shipping buffer set
   const bufferSet = shippingPlanner.bufferPercent > 0;
@@ -167,7 +161,7 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
 
   // 10 pts: readiness 50%+
   const readinessChecked = promoTools.readinessChecks.filter(r => r.checked).length;
-  const readiness50 = readinessChecked >= 4; // 4 of 8 = 50%
+  const readiness50 = readinessChecked >= 4; // 4 of 7 ≈ 50%
   scoreBreakdown.push({ label: 'Launch readiness 50%+ complete', points: 10, earned: readiness50 });
   if (readiness50) confidence += 10;
 
@@ -195,11 +189,10 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
   const expectedGross = expectedBackers * pledgeAmount;
   const expectedShipping = expectedBackers * avgShippingCost;
   const shipPct = expectedGross > 0 ? (expectedShipping / expectedGross) * 100 : 0;
-  if (shipPct > 40) flags.push({ severity: 'red', message: `Shipping costs are ${shipPct.toFixed(0)}% of projected revenue`, nav: 'Shipping Planner' });
-  else if (shipPct > 25) flags.push({ severity: 'orange', message: `Shipping costs are ${shipPct.toFixed(0)}% of projected revenue`, nav: 'Shipping Planner' });
+  if (shipPct > 40) flags.push({ severity: 'red', message: `Shipping costs are ${shipPct.toFixed(0)}% of projected revenue`, nav: 'Shipping' });
+  else if (shipPct > 25) flags.push({ severity: 'orange', message: `Shipping costs are ${shipPct.toFixed(0)}% of projected revenue`, nav: 'Shipping' });
 
-  if (emailSize > 0 && emailSize < 500) flags.push({ severity: 'orange', message: `Email list is only ${emailSize.toLocaleString()} subscribers`, nav: 'Book Setup' });
-  if (emailRate > 0 && emailRate < 20) flags.push({ severity: 'orange', message: `Email open rate is ${emailRate}% (below 20% target)`, nav: 'Book Setup' });
+  if (emailSize > 0 && emailSize < 500) flags.push({ severity: 'orange', message: `Email list is only ${emailSize.toLocaleString()} subscribers`, nav: 'Project Setup' });
 
   // Thin margins
   tiersWithPledge.forEach(t => {
@@ -210,7 +203,7 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
   });
 
   if (backerPctTotal > 0 && Math.abs(backerPctTotal - 100) >= 1) {
-    flags.push({ severity: 'orange', message: `Shipping region backer percentages total ${backerPctTotal}% (should be 100%)`, nav: 'Shipping Planner' });
+    flags.push({ severity: 'orange', message: `Shipping region backer percentages total ${backerPctTotal}% (should be 100%)`, nav: 'Shipping' });
   }
 
   // ===== SCENARIO SNAPSHOT =====
@@ -236,8 +229,8 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
 
   // ===== NEXT ACTIONS =====
   const actions: { message: string; nav: NavItem }[] = [];
-  if (!bookSetup.bookTitle || !bookSetup.pageCount) actions.push({ message: 'Complete your book details in Book Setup', nav: 'Book Setup' });
-  if (!firstPod) actions.push({ message: 'Add printer quotes in Printer Quotes', nav: 'Printer Quotes' });
+  if (!bookSetup.campaignTitle || bookSetup.conservativeEstimate === null) actions.push({ message: 'Set your basics and estimates in Project Setup', nav: 'Project Setup' });
+  if (!firstPod) actions.push({ message: 'Add unit cost quotes in Unit Costs', nav: 'Unit Costs' });
   if (!bestTier) actions.push({ message: 'Set up your reward tiers in Pricing & Tiers', nav: 'Pricing & Tiers' });
   if (tiersWithPledge.some(t => {
     const printer = printerQuotes.podPrinters.find(p => p.id === t.printerId);
@@ -245,14 +238,14 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
     return (t.pledgeAmount! * (1 - TOTAL_FEE)) - pCost - avgShippingCost < 0;
   })) actions.push({ message: 'Fix negative-margin tiers in Pricing & Tiers', nav: 'Pricing & Tiers' });
   if (goal > 0 && costFloor > 0 && goal < costFloor) actions.push({ message: 'Increase your campaign goal in Pricing & Tiers', nav: 'Pricing & Tiers' });
-  if (backerPctTotal > 0 && Math.abs(backerPctTotal - 100) >= 1) actions.push({ message: 'Complete your shipping region breakdown', nav: 'Shipping Planner' });
-  if (confidence < 50) actions.push({ message: 'Review your launch readiness checklist', nav: 'Promotional Tools' });
+  if (backerPctTotal > 0 && Math.abs(backerPctTotal - 100) >= 1) actions.push({ message: 'Complete your shipping region breakdown', nav: 'Shipping' });
+  if (confidence < 50) actions.push({ message: 'Review your launch readiness checklist', nav: 'Launch Plan' });
 
   // Launch date within 30 days
   if (launchDate) {
     const daysUntil = Math.ceil((new Date(launchDate + 'T00:00:00').getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     if (daysUntil <= 30 && daysUntil > 0 && confidence < 70) {
-      actions.push({ message: 'Your launch is soon \u2014 address warnings before going live', nav: 'Promotional Tools' });
+      actions.push({ message: 'Your launch is soon \u2014 address warnings before going live', nav: 'Launch Plan' });
     }
   }
 
@@ -283,11 +276,6 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
             {emailSize > 0 && (
               <span className="db-chip">
                 <span className="db-chip-num">{emailSize.toLocaleString()}</span> subscribers
-              </span>
-            )}
-            {emailRate > 0 && (
-              <span className="db-chip">
-                <span className="db-chip-num">{emailRate}%</span> open rate
               </span>
             )}
           </div>
@@ -382,7 +370,7 @@ const Dashboard: React.FC<DashboardProps> = ({ campaignId, onNavChange }) => {
               </div>
             ) : (
               <div className="db-scenarios-empty">
-                Complete Book Setup, Printer Quotes, Pricing &amp; Tiers, and Shipping Planner to see scenario projections.
+                Complete Project Setup, Unit Costs, Pricing &amp; Tiers, and Shipping to see scenario projections.
               </div>
             )}
           </div>

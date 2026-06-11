@@ -7,10 +7,9 @@ import PricingTiers from './pricing-tiers';
 import ShippingPlanner from './shipping-planner';
 import ScenarioModeler from './scenario-modeler';
 import StretchGoals from './stretch-goals';
-import PromotionalTools from './promotional-tools';
+import LaunchPlan from './launch-plan';
 import FulfillmentPlanner from './fulfillment-planner';
 import Retrospective from './retrospective';
-import PrelaunchTracker from './pre-launch-tracker';
 import LiveTracker from './live-tracker';
 import CampaignSummary from './campaign-summary';
 
@@ -29,7 +28,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ activeNav, campaignId, onNavC
     );
   }
 
-  if (activeNav === 'Book Setup') {
+  if (activeNav === 'Project Setup') {
     return (
       <main className="content-area content-area--form">
         <BookSetup campaignId={campaignId} />
@@ -37,7 +36,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ activeNav, campaignId, onNavC
     );
   }
 
-  if (activeNav === 'Printer Quotes') {
+  if (activeNav === 'Unit Costs') {
     return (
       <main className="content-area content-area--form">
         <PrinterQuotes campaignId={campaignId} />
@@ -53,7 +52,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ activeNav, campaignId, onNavC
     );
   }
 
-  if (activeNav === 'Shipping Planner') {
+  if (activeNav === 'Shipping') {
     return (
       <main className="content-area content-area--form">
         <ShippingPlanner campaignId={campaignId} />
@@ -61,7 +60,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ activeNav, campaignId, onNavC
     );
   }
 
-  if (activeNav === 'Scenario Modeler') {
+  if (activeNav === 'Scenarios') {
     return (
       <main className="content-area content-area--form">
         <ScenarioModeler campaignId={campaignId} onNavChange={onNavChange} />
@@ -77,15 +76,15 @@ const ContentArea: React.FC<ContentAreaProps> = ({ activeNav, campaignId, onNavC
     );
   }
 
-  if (activeNav === 'Promotional Tools') {
+  if (activeNav === 'Launch Plan') {
     return (
       <main className="content-area content-area--form">
-        <PromotionalTools campaignId={campaignId} onNavChange={onNavChange} />
+        <LaunchPlan campaignId={campaignId} onNavChange={onNavChange} />
       </main>
     );
   }
 
-  if (activeNav === 'Fulfillment Planner') {
+  if (activeNav === 'Fulfillment') {
     return (
       <main className="content-area content-area--form">
         <FulfillmentPlanner campaignId={campaignId} onNavChange={onNavChange} />
@@ -101,14 +100,6 @@ const ContentArea: React.FC<ContentAreaProps> = ({ activeNav, campaignId, onNavC
     );
   }
 
-  if (activeNav === 'Pre-launch Tracker') {
-    return (
-      <main className="content-area content-area--form">
-        <PrelaunchTracker campaignId={campaignId} />
-      </main>
-    );
-  }
-
   if (activeNav === 'Live Tracker') {
     return (
       <main className="content-area content-area--form">
@@ -117,7 +108,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ activeNav, campaignId, onNavC
     );
   }
 
-  if (activeNav === 'Campaign Summary') {
+  if (activeNav === 'Summary') {
     return (
       <main className="content-area content-area--form">
         <CampaignSummary campaignId={campaignId} />

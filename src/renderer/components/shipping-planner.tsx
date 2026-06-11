@@ -6,7 +6,6 @@ import type {
   BookSetupData,
   PrinterQuotesData,
   PricingTiersData,
-  Currency,
 } from '../../types/campaign';
 import {
   defaultShippingPlanner,
@@ -82,21 +81,7 @@ const ShippingPlanner: React.FC<ShippingPlannerProps> = ({ campaignId }) => {
     }));
   }, []);
 
-  const setRate = useCallback((cur: string, val: number | null) => {
-    setForm(prev => ({ ...prev, currencyRates: { ...prev.currencyRates, [cur]: val } }));
-  }, []);
-
   // --- Derived data ---
-
-  // Non-USD currencies used in printer quotes
-  const nonUsdCurrencies: Currency[] = [];
-  const seen = new Set<Currency>();
-  for (const p of printerQuotes.podPrinters) {
-    if (p.currency !== 'USD' && !seen.has(p.currency)) { seen.add(p.currency); nonUsdCurrencies.push(p.currency); }
-  }
-  for (const o of printerQuotes.offsetPrinters) {
-    if (o.currency !== 'USD' && !seen.has(o.currency)) { seen.add(o.currency); nonUsdCurrencies.push(o.currency); }
-  }
 
   // Enabled regions
   const enabledRegions = form.regions.filter(r => r.enabled);
@@ -170,7 +155,7 @@ const ShippingPlanner: React.FC<ShippingPlannerProps> = ({ campaignId }) => {
   return (
     <div className="sp-screen">
       <div className="sp-header">
-        <h1 className="sp-title">Shipping Planner</h1>
+        <h1 className="sp-title">Shipping</h1>
         <span className={`save-indicator ${saveStatus}`}>
           {saveStatus === 'saving' && 'Saving\u2026'}
           {saveStatus === 'saved' && '\u2713 Saved'}
@@ -178,30 +163,6 @@ const ShippingPlanner: React.FC<ShippingPlannerProps> = ({ campaignId }) => {
       </div>
 
       <div className="form-scroll">
-        {/* 1. CURRENCY CONVERSION */}
-        {nonUsdCurrencies.length > 0 && (
-          <section className="form-section">
-            <h2 className="form-section-label">Currency Conversion Rates</h2>
-            <span className="form-helper" style={{ marginBottom: 12, display: 'block' }}>
-              For quotes not in USD — enter today&apos;s rate from Google or XE.com
-            </span>
-            {nonUsdCurrencies.map(cur => (
-              <div className="form-field" key={cur}>
-                <label className="form-label">{cur} &rarr; USD</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={form.currencyRates[cur] ?? ''}
-                  onChange={e => setRate(cur, e.target.value === '' ? null : Number(e.target.value))}
-                  placeholder="1.2650"
-                  step={0.0001}
-                  min={0}
-                />
-              </div>
-            ))}
-          </section>
-        )}
-
         {/* 2. SHIPPING REGIONS */}
         <section className="form-section sp-section-wide">
           <h2 className="form-section-label">Shipping Regions</h2>

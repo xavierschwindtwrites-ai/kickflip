@@ -2,20 +2,11 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { NavItem, CampaignListItem } from '../app';
 import Logo from './logo';
 
-const NAV_ITEMS: NavItem[] = [
-  'Dashboard',
-  'Book Setup',
-  'Printer Quotes',
-  'Pricing & Tiers',
-  'Shipping Planner',
-  'Scenario Modeler',
-  'Stretch Goals',
-  'Promotional Tools',
-  'Fulfillment Planner',
-  'Retrospective',
-  'Pre-launch Tracker',
-  'Live Tracker',
-  'Campaign Summary',
+const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
+  { label: null, items: ['Dashboard'] },
+  { label: 'Plan', items: ['Project Setup', 'Unit Costs', 'Pricing & Tiers', 'Shipping', 'Scenarios', 'Stretch Goals'] },
+  { label: 'Launch', items: ['Launch Plan', 'Live Tracker'] },
+  { label: 'Wrap up', items: ['Fulfillment', 'Retrospective', 'Summary'] },
 ];
 
 interface SidebarProps {
@@ -192,20 +183,25 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item}
-            className={`nav-item${activeNav === item ? ' active' : ''}`}
-            onClick={() => onNavChange(item)}
-          >
-            <span className="nav-icon" />
-            {item}
-          </button>
+        {NAV_GROUPS.map((group, gi) => (
+          <div key={gi} className="nav-group">
+            {group.label && <div className="nav-group-label">{group.label}</div>}
+            {group.items.map(item => (
+              <button
+                key={item}
+                className={`nav-item${activeNav === item ? ' active' : ''}`}
+                onClick={() => onNavChange(item)}
+              >
+                <span className="nav-icon" />
+                {item}
+              </button>
+            ))}
+          </div>
         ))}
       </nav>
 
       <div className="sidebar-footer">
-        <span className="sidebar-version">v0.2.2</span>
+        <span className="sidebar-version">v0.3.0</span>
       </div>
     </aside>
   );

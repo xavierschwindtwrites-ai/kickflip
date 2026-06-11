@@ -5,7 +5,6 @@ import type {
   PodPrinter,
   OffsetPrinter,
   OffsetVolumeRow,
-  Currency,
 } from '../../types/campaign';
 import {
   defaultPrinterQuotes,
@@ -23,12 +22,6 @@ const POD_PRINTERS = [
   'Other',
 ];
 
-const CURRENCIES: Currency[] = ['USD', 'GBP', 'EUR', 'CAD', 'AUD'];
-
-const CURRENCY_SYMBOLS: Record<Currency, string> = {
-  USD: '$', GBP: '£', EUR: '€', CAD: 'C$', AUD: 'A$',
-};
-
 interface PrinterQuotesProps {
   campaignId: number;
 }
@@ -45,7 +38,7 @@ function validate(data: PrinterQuotesData): Warnings {
 
   const hasAnyPodCost = data.podPrinters.some(p => p.unitCost !== null && p.unitCost > 0);
   if (!hasAnyPodCost) {
-    w.podGlobal = 'Enter a unit cost for at least one POD printer before proceeding';
+    w.podGlobal = 'Enter a unit cost for at least one quote before proceeding';
   }
 
   for (const p of data.podPrinters) {
@@ -219,7 +212,7 @@ const PrinterQuotes: React.FC<PrinterQuotesProps> = ({ campaignId }) => {
   return (
     <div className="pq-screen">
       <div className="pq-header">
-        <h1 className="pq-title">Printer Quotes</h1>
+        <h1 className="pq-title">Unit Costs</h1>
         <span className={`save-indicator ${saveStatus}`}>
           {saveStatus === 'saving' && 'Saving\u2026'}
           {saveStatus === 'saved' && '\u2713 Saved'}
@@ -229,7 +222,7 @@ const PrinterQuotes: React.FC<PrinterQuotesProps> = ({ campaignId }) => {
       <div className="form-scroll">
         {/* POD SECTION */}
         <section className="form-section">
-          <h2 className="form-section-label">Print on Demand Quotes</h2>
+          <h2 className="form-section-label">Per-Unit Quotes (POD / made-to-order)</h2>
           {warnings.podGlobal && (
             <div className="form-warning" style={{ marginBottom: 16 }}>{warnings.podGlobal}</div>
           )}
@@ -245,12 +238,12 @@ const PrinterQuotes: React.FC<PrinterQuotesProps> = ({ campaignId }) => {
             />
           ))}
 
-          <button className="add-btn" onClick={addPod}>+ Add POD Printer</button>
+          <button className="add-btn" onClick={addPod}>+ Add Quote</button>
         </section>
 
         {/* OFFSET SECTION */}
         <section className="form-section">
-          <h2 className="form-section-label">Offset Printing Quotes</h2>
+          <h2 className="form-section-label">Bulk Run Quotes (offset / volume pricing)</h2>
 
           {form.offsetPrinters.map((offset) => (
             <OffsetCard
@@ -268,13 +261,12 @@ const PrinterQuotes: React.FC<PrinterQuotesProps> = ({ campaignId }) => {
             />
           ))}
 
-          <button className="add-btn" onClick={addOffset}>+ Add Offset Printer</button>
+          <button className="add-btn" onClick={addOffset}>+ Add Bulk Quote</button>
         </section>
 
-        {/* CURRENCY NOTE */}
         <div className="form-helper-block" style={{ maxWidth: 640 }}>
-          If your quote is in GBP or another currency, enter the amount as quoted.
-          KickFlip will ask for your conversion rate on the Shipping Planner screen.
+          Got a quote in another currency? Convert it to your campaign currency before
+          entering it — one currency everywhere keeps every margin number honest.
         </div>
       </div>
     </div>
@@ -294,14 +286,14 @@ interface PodCardProps {
 }
 
 const PodCard: React.FC<PodCardProps> = ({ printer, canRemove, warnings, onUpdate, onRemove }) => {
-  const sym = CURRENCY_SYMBOLS[printer.currency];
+  const sym = '$';
 
   return (
     <div className="printer-card">
       <div className="printer-card-top">
         <div className="printer-card-fields">
           <div className="form-field">
-            <label className="form-label">Printer</label>
+            <label className="form-label">Printer / vendor</label>
             <select
               className="form-input form-select"
               value={printer.printerName}
@@ -325,16 +317,6 @@ const PodCard: React.FC<PodCardProps> = ({ printer, canRemove, warnings, onUpdat
             </div>
           )}
 
-          <div className="form-field">
-            <label className="form-label">Currency</label>
-            <select
-              className="form-input form-select"
-              value={printer.currency}
-              onChange={e => onUpdate(printer.id, { currency: e.target.value as Currency })}
-            >
-              {CURRENCIES.map(c => <option key={c} value={c}>{c} ({CURRENCY_SYMBOLS[c]})</option>)}
-            </select>
-          </div>
         </div>
         {canRemove && (
           <button className="remove-btn" onClick={() => onRemove(printer.id)} title="Remove printer">&times;</button>
@@ -403,7 +385,7 @@ const OffsetCard: React.FC<OffsetCardProps> = ({
   printer, canRemove, warnings, rowWarnings,
   onUpdate, onRemove, onUpdateRow, onOverrideTotal, onAddRow, onRemoveRow,
 }) => {
-  const sym = CURRENCY_SYMBOLS[printer.currency];
+  const sym = '$';
 
   return (
     <div className="printer-card">
@@ -416,20 +398,10 @@ const OffsetCard: React.FC<OffsetCardProps> = ({
               className="form-input"
               value={printer.printerName}
               onChange={e => onUpdate(printer.id, { printerName: e.target.value })}
-              placeholder="e.g. Sheridan, Thomson-Shore"
+              placeholder="e.g. Sheridan, PrintNinja"
             />
           </div>
 
-          <div className="form-field">
-            <label className="form-label">Currency</label>
-            <select
-              className="form-input form-select"
-              value={printer.currency}
-              onChange={e => onUpdate(printer.id, { currency: e.target.value as Currency })}
-            >
-              {CURRENCIES.map(c => <option key={c} value={c}>{c} ({CURRENCY_SYMBOLS[c]})</option>)}
-            </select>
-          </div>
         </div>
         {canRemove && (
           <button className="remove-btn" onClick={() => onRemove(printer.id)} title="Remove printer">&times;</button>

@@ -258,7 +258,7 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
   return (
     <div className="fp-screen">
       <div className="fp-header">
-        <h1 className="fp-title">Fulfillment Planner</h1>
+        <h1 className="fp-title">Fulfillment</h1>
         <span className={`save-indicator ${saveStatus}`}>
           {saveStatus === 'saving' && 'Saving…'}
           {saveStatus === 'saved' && '✓ Saved'}
@@ -294,8 +294,8 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
                 <div className="fp-display-value">
                   {campaignEndDate ? formatDate(campaignEndDate) : 'Not available'}
                   {!campaignEndDate && (
-                    <button className="pt-link-btn" onClick={() => onNavChange('Book Setup')}>
-                      Set in Book Setup / Promotional Tools
+                    <button className="pt-link-btn" onClick={() => onNavChange('Project Setup')}>
+                      Set in Project Setup / Launch Plan
                     </button>
                   )}
                 </div>
@@ -382,7 +382,7 @@ const FulfillmentPlanner: React.FC<FulfillmentPlannerProps> = ({ campaignId, onN
                   </select>
                   {allPrinters.length === 0 && (
                     <span className="form-helper">
-                      <button className="pt-link-btn" onClick={() => onNavChange('Printer Quotes')}>Add printers in Printer Quotes</button>
+                      <button className="pt-link-btn" onClick={() => onNavChange('Unit Costs')}>Add quotes in Unit Costs</button>
                     </span>
                   )}
                 </div>

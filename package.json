@@ -1,7 +1,7 @@
 {
   "name": "kickflip",
   "productName": "KickFlip",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "A free Kickstarter planning tool for indie authors",
   "main": ".webpack/main",
   "private": true,
