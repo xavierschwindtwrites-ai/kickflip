@@ -1,411 +1,569 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!--
-  ============================================================
-  KickFlip Landing Page — Three things to customize:
-
-  1. GitHub username is set to: xavierschwindtwrites-ai (done)
-
-  2. YouTube video ID is set to: H6T3xEwhm8U (done)
-
-  3. Optionally update the "Built for authors" paragraph in
-     the community section with your own voice / story
-  ============================================================
--->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KickFlip — Plan your Kickstarter. Know your numbers.</title>
 <meta name="description" content="A free, offline desktop app that does the Kickstarter math indie authors lose sleep over. No account, no subscription, your data never leaves your computer.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='40' height='40' rx='9' fill='%231a1a1a'/%3E%3Crect x='4' y='22' width='32' height='6' rx='3' fill='%23E8622A'/%3E%3Ccircle cx='11' cy='31' r='3' fill='%23fff'/%3E%3Ccircle cx='29' cy='31' r='3' fill='%23fff'/%3E%3Ctext x='20' y='19' text-anchor='middle' font-family='Arial Black, sans-serif' font-weight='900' font-size='17' fill='%23fff'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..1000;1,9..40,300..1000&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
     --orange: #E8622A;
-    --orange-hover: #d4551f;
-    --dark: #1a1a1a;
-    --gray: #555;
-    --light-gray: #f5f5f7;
-    --max-w: 1080px;
+    --orange-deep: #c94f1d;
+    --orange-soft: rgba(232, 98, 42, 0.08);
+    --ink: #15151a;
+    --ink-soft: #3c3c44;
+    --gray: #5d5d66;
+    --gray-light: #8e8e98;
+    --paper: #fcfcfd;
+    --card-border: #e9e9ee;
+    --max-w: 1120px;
+    --radius: 16px;
+    --shadow-lg: 0 24px 64px -16px rgba(21, 21, 26, 0.18);
+    --shadow-md: 0 10px 32px -8px rgba(21, 21, 26, 0.10);
+    --shadow-sm: 0 2px 12px rgba(21, 21, 26, 0.05);
   }
+
+  html { scroll-behavior: smooth; }
 
   body {
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    color: var(--dark);
+    color: var(--ink);
     line-height: 1.6;
-    background: #fff;
+    background: var(--paper);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   a { color: var(--orange); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
-  .container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+  .wrap { max-width: var(--max-w); margin: 0 auto; padding: 0 28px; }
 
-  /* ---- Hero ---- */
+  /* ====== Nav ====== */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    background: rgba(252, 252, 253, 0.82);
+    border-bottom: 1px solid rgba(21, 21, 26, 0.06);
+  }
+
+  .nav-inner {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 28px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: -0.4px;
+    color: var(--ink);
+  }
+  .nav-brand:hover { text-decoration: none; }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+  }
+
+  .nav-links a {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray);
+    transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--ink); text-decoration: none; }
+
+  .nav-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--ink);
+    color: #fff !important;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 99px;
+    transition: background 0.15s, transform 0.12s;
+  }
+  .nav-cta:hover { background: var(--orange); text-decoration: none; transform: translateY(-1px); }
+
+  @media (max-width: 720px) {
+    .nav-links a:not(.nav-cta) { display: none; }
+  }
+
+  /* ====== Hero ====== */
   .hero {
+    position: relative;
     text-align: center;
-    padding: 72px 24px 56px;
+    padding: 88px 28px 0;
+    overflow: hidden;
     background:
-      radial-gradient(1200px 480px at 50% -120px, rgba(232, 98, 42, 0.10), transparent 60%),
-      radial-gradient(800px 360px at 50% 100%, rgba(232, 98, 42, 0.04), transparent 70%);
+      radial-gradient(1100px 500px at 50% -150px, rgba(232, 98, 42, 0.12), transparent 62%),
+      linear-gradient(180deg, #fff 0%, var(--paper) 100%);
   }
 
   .hero-badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: rgba(232, 98, 42, 0.08);
-    border: 1px solid rgba(232, 98, 42, 0.22);
-    color: var(--orange);
-    font-size: 12px;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-sm);
+    color: var(--ink-soft);
+    font-size: 12.5px;
     font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-    letter-spacing: 0.2px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    margin-bottom: 28px;
   }
 
-  .hero-logo {
-    display: inline-block;
-    margin-bottom: 20px;
+  .hero-badge .pulse {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--orange);
+    box-shadow: 0 0 0 0 rgba(232, 98, 42, 0.5);
+    animation: pulse 2.2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(232, 98, 42, 0.45); }
+    70% { box-shadow: 0 0 0 8px rgba(232, 98, 42, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(232, 98, 42, 0); }
   }
 
   .hero h1 {
-    font-size: clamp(28px, 5vw, 46px);
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    line-height: 1.13;
-    margin-bottom: 16px;
+    font-size: clamp(38px, 6.2vw, 64px);
+    font-weight: 800;
+    letter-spacing: -2.2px;
+    line-height: 1.04;
+    margin: 0 auto 22px;
+    max-width: 780px;
   }
 
+  .hero h1 .accent { color: var(--orange); }
+
   .hero-sub {
-    font-size: clamp(16px, 2.5vw, 19px);
+    font-size: clamp(16px, 2.2vw, 19px);
     color: var(--gray);
-    max-width: 520px;
-    margin: 0 auto 36px;
-    line-height: 1.55;
+    max-width: 560px;
+    margin: 0 auto 38px;
+    line-height: 1.6;
+    font-weight: 400;
   }
 
   .hero-buttons {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 14px;
     flex-wrap: wrap;
-    margin-bottom: 14px;
+    margin-bottom: 18px;
   }
 
   .btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    background: var(--orange);
+    gap: 9px;
+    background: var(--ink);
     color: #fff;
     font-size: 15px;
     font-weight: 600;
-    padding: 13px 26px;
-    border-radius: 8px;
+    padding: 15px 30px;
+    border-radius: 12px;
     border: none;
     cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
+    transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
     text-decoration: none;
+    box-shadow: var(--shadow-sm);
   }
 
-  .btn:hover { background: var(--orange-hover); text-decoration: none; transform: translateY(-1px); }
+  .btn:hover { background: var(--orange); text-decoration: none; transform: translateY(-2px); box-shadow: var(--shadow-md); }
   .btn:active { transform: translateY(0); }
 
-  .btn svg { flex-shrink: 0; }
+  .btn-primary { background: var(--orange); }
+  .btn-primary:hover { background: var(--orange-deep); }
 
   .btn-ghost {
-    background: transparent;
-    color: var(--dark);
-    border: 1.5px solid #d8d8de;
+    background: #fff;
+    color: var(--ink);
+    border: 1px solid var(--card-border);
   }
-
-  .btn-ghost:hover { background: var(--light-gray); border-color: #bbb; transform: translateY(-1px); }
+  .btn-ghost:hover { background: var(--paper); border-color: #cfcfd6; color: var(--ink); }
 
   .hero-note {
     font-size: 12.5px;
-    color: #999;
-    max-width: 460px;
+    color: var(--gray-light);
+    margin-bottom: 64px;
+  }
+  .hero-note a { color: var(--gray); font-weight: 500; }
+
+  /* Hero app frame */
+  .hero-shot {
+    position: relative;
+    max-width: 960px;
     margin: 0 auto;
-    line-height: 1.6;
   }
 
-  /* ---- Trust bar ---- */
-  .trust-bar {
+  .hero-shot::before {
+    content: '';
+    position: absolute;
+    inset: 8% -6% -10% -6%;
+    background: radial-gradient(closest-side, rgba(232, 98, 42, 0.16), transparent 75%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .app-frame {
+    position: relative;
+    z-index: 1;
+    background: #1a1a1f;
+    border-radius: 18px 18px 0 0;
+    padding: 14px 14px 0;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .app-frame-bar {
+    display: flex;
+    gap: 7px;
+    padding: 2px 4px 12px;
+  }
+
+  .app-frame-bar i {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: #3a3a42;
+  }
+  .app-frame-bar i:nth-child(1) { background: #ff5f57; }
+  .app-frame-bar i:nth-child(2) { background: #febc2e; }
+  .app-frame-bar i:nth-child(3) { background: #28c840; }
+
+  .app-frame img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px 8px 0 0;
+  }
+
+  /* ====== Trust band ====== */
+  .trust {
+    border-top: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
+    background: #fff;
+  }
+
+  .trust-inner {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 22px 28px;
     display: flex;
     justify-content: center;
-    align-items: center;
-    gap: 0;
-    padding: 0 24px 48px;
     flex-wrap: wrap;
+    gap: 0;
   }
 
   .trust-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #666;
-    padding: 0 20px;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    padding: 6px 26px;
   }
 
-  .trust-item + .trust-item {
-    border-left: 1px solid #e8e8eb;
-  }
+  .trust-item + .trust-item { border-left: 1px solid var(--card-border); }
+  @media (max-width: 720px) { .trust-item + .trust-item { border-left: none; } }
 
-  .trust-item svg {
+  .trust-item svg { color: var(--orange); flex-shrink: 0; }
+
+  /* ====== Sections ====== */
+  section { padding: 96px 28px; }
+
+  .kicker {
+    display: block;
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
     color: var(--orange);
-    flex-shrink: 0;
+    margin-bottom: 14px;
   }
-
-  /* ---- Sections ---- */
-  section { padding: 64px 24px; }
-
-  section:nth-child(even) { background: var(--light-gray); }
 
   .section-heading {
     text-align: center;
-    font-size: clamp(22px, 3.5vw, 30px);
-    font-weight: 700;
-    letter-spacing: -0.3px;
-    margin-bottom: 10px;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 800;
+    letter-spacing: -1.2px;
+    line-height: 1.12;
+    margin-bottom: 14px;
   }
 
   .section-sub {
     text-align: center;
-    font-size: 16px;
+    font-size: 16.5px;
     color: var(--gray);
-    max-width: 540px;
-    margin: 0 auto 40px;
-    line-height: 1.55;
+    max-width: 560px;
+    margin: 0 auto 56px;
+    line-height: 1.6;
   }
 
-  /* ---- Video ---- */
-  .video-wrap {
-    max-width: 800px;
+  /* ====== Phases ====== */
+  .phases { background: var(--ink); }
+
+  .phases .kicker { color: var(--orange); }
+  .phases .section-heading { color: #fff; }
+  .phases .section-sub { color: #a3a3ad; }
+
+  .phases-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    max-width: 1000px;
     margin: 0 auto;
+  }
+
+  @media (max-width: 820px) { .phases-grid { grid-template-columns: 1fr; max-width: 480px; } }
+
+  .phase-card {
+    background: #202027;
+    border: 1px solid #2c2c34;
+    border-radius: var(--radius);
+    padding: 30px 28px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .phase-card:hover { border-color: rgba(232, 98, 42, 0.45); transform: translateY(-3px); }
+
+  .phase-num {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 12px;
+  }
+
+  .phase-card h3 {
+    color: #fff;
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    margin-bottom: 10px;
+  }
+
+  .phase-card p {
+    color: #a3a3ad;
+    font-size: 14px;
+    line-height: 1.65;
+    margin-bottom: 16px;
+  }
+
+  .phase-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .phase-tools span {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #c9c9d2;
+    background: #2a2a32;
+    border: 1px solid #34343d;
+    padding: 4px 10px;
+    border-radius: 99px;
+  }
+
+  /* ====== Video ====== */
+  .video-wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
   }
 
   .video-wrap iframe {
     width: 100%;
     aspect-ratio: 16 / 9;
     border: none;
-    border-radius: 12px;
     display: block;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.10);
   }
 
-  /* ---- Screenshots ---- */
-  .shots-grid {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 20px;
-    max-width: 1080px;
-    margin: 0 auto;
-  }
+  /* ====== Features ====== */
+  .features { background: #fff; border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); }
 
-  @media (max-width: 820px) {
-    .shots-grid { grid-template-columns: 1fr; }
-  }
-
-  .shot {
-    background: #fff;
-    border: 1px solid #e8e8eb;
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.06);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .shot img {
-    display: block;
-    width: 100%;
-    height: auto;
-    object-fit: cover;
-  }
-
-  .shot-caption {
-    padding: 14px 18px 16px;
-    border-top: 1px solid #eee;
-    font-size: 13px;
-    color: var(--gray);
-    line-height: 1.5;
-  }
-
-  .shot-caption strong {
-    display: block;
-    color: var(--dark);
-    font-weight: 700;
-    font-size: 13.5px;
-    margin-bottom: 2px;
-  }
-
-  .shots-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-
-  @media (max-width: 540px) {
-    .shots-row { grid-template-columns: 1fr; }
-  }
-
-  /* ---- Features ---- */
   .features-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    max-width: 1000px;
+    gap: 18px;
+    max-width: 1060px;
     margin: 0 auto;
   }
 
-  @media (max-width: 820px) {
-    .features-grid { grid-template-columns: 1fr 1fr; }
-  }
-
-  @media (max-width: 540px) {
-    .features-grid { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 880px) { .features-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .features-grid { grid-template-columns: 1fr; } }
 
   .feature-card {
-    background: #fff;
-    border: 1px solid #e8e8eb;
-    border-radius: 12px;
-    padding: 22px 22px 20px;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    position: relative;
+    background: var(--paper);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 26px 24px 24px;
+    transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
   }
 
   .feature-card:hover {
-    border-color: rgba(232, 98, 42, 0.3);
-    box-shadow: 0 4px 16px rgba(232, 98, 42, 0.07);
+    border-color: rgba(232, 98, 42, 0.35);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-3px);
   }
 
   .feature-icon {
-    width: 36px;
-    height: 36px;
-    background: rgba(232, 98, 42, 0.08);
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    background: var(--orange-soft);
+    border-radius: 11px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     color: var(--orange);
   }
 
   .feature-card h3 {
-    font-size: 14.5px;
+    font-size: 15.5px;
     font-weight: 700;
-    margin-bottom: 6px;
-    color: var(--dark);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .badge-new {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    padding: 2px 6px;
-    background: var(--orange);
-    color: #fff;
-    border-radius: 4px;
-    vertical-align: middle;
-    flex-shrink: 0;
-  }
-
-  .badge-improved {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    padding: 2px 6px;
-    background: rgba(232, 98, 42, 0.1);
-    color: var(--orange);
-    border: 1px solid rgba(232, 98, 42, 0.25);
-    border-radius: 4px;
-    vertical-align: middle;
-    flex-shrink: 0;
+    letter-spacing: -0.2px;
+    margin-bottom: 7px;
   }
 
   .feature-card p {
     font-size: 13.5px;
     color: var(--gray);
-    line-height: 1.6;
+    line-height: 1.62;
   }
 
-  /* ---- Install ---- */
-  .install-grid {
+  /* ====== Screenshots ====== */
+  .shots-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    max-width: 780px;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    max-width: var(--max-w);
     margin: 0 auto;
   }
 
-  @media (max-width: 640px) {
-    .install-grid { grid-template-columns: 1fr; }
+  @media (max-width: 820px) { .shots-grid { grid-template-columns: 1fr; } }
+
+  .shot {
+    background: #fff;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s, transform 0.2s;
   }
 
+  .shot:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+  .shot img { display: block; width: 100%; height: auto; }
+
+  .shot-caption {
+    padding: 16px 20px 18px;
+    border-top: 1px solid var(--card-border);
+    font-size: 13px;
+    color: var(--gray);
+    line-height: 1.55;
+  }
+
+  .shot-caption strong {
+    display: block;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 3px;
+  }
+
+  /* ====== Install ====== */
+  .install { background: #fff; border-top: 1px solid var(--card-border); }
+
+  .install-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 820px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 680px) { .install-grid { grid-template-columns: 1fr; } }
+
   .install-card {
-    background: #fff;
-    border: 1px solid #e8e8eb;
-    border-radius: 12px;
-    padding: 26px 28px;
+    background: var(--paper);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 30px 30px 26px;
   }
 
   .install-card h3 {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
   }
 
   .install-card ol {
     padding-left: 20px;
     font-size: 14px;
     color: var(--gray);
-    line-height: 1.75;
+    line-height: 1.8;
   }
 
   .install-code {
     display: block;
-    margin: 8px 0 4px;
-    padding: 10px 14px;
-    background: #1a1a1a;
+    margin: 8px 0 6px;
+    padding: 11px 14px;
+    background: var(--ink);
     color: #f0f0f0;
     font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
-    font-size: 13px;
-    border-radius: 6px;
+    font-size: 12.5px;
+    border-radius: 8px;
     user-select: all;
     -webkit-user-select: all;
     word-break: break-all;
   }
 
   .install-note {
-    margin-top: 14px;
+    margin-top: 16px;
     font-size: 12px;
-    color: #999;
+    color: var(--gray-light);
     line-height: 1.6;
   }
 
-  /* ---- FAQ ---- */
+  /* ====== FAQ ====== */
   .faq-list {
-    max-width: 760px;
+    max-width: 740px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -414,23 +572,20 @@
 
   .faq-item {
     background: #fff;
-    border: 1px solid #e8e8eb;
-    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
     overflow: hidden;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
 
-  .faq-item[open] {
-    border-color: rgba(232, 98, 42, 0.3);
-  }
+  .faq-item[open] { border-color: rgba(232, 98, 42, 0.35); box-shadow: var(--shadow-sm); }
 
   .faq-item summary {
     list-style: none;
     cursor: pointer;
-    padding: 16px 20px;
+    padding: 17px 22px;
     font-size: 15px;
     font-weight: 600;
-    color: var(--dark);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -442,8 +597,8 @@
   .faq-item summary::after {
     content: '';
     flex-shrink: 0;
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
     border-right: 2px solid var(--orange);
     border-bottom: 2px solid var(--orange);
     transform: rotate(45deg);
@@ -451,121 +606,138 @@
     margin-bottom: 4px;
   }
 
-  .faq-item[open] summary::after {
-    transform: rotate(-135deg);
-    margin-bottom: 0;
-    margin-top: 4px;
-  }
-
+  .faq-item[open] summary::after { transform: rotate(-135deg); margin-bottom: 0; margin-top: 4px; }
   .faq-item summary:hover { color: var(--orange); }
 
   .faq-body {
-    padding: 0 20px 18px;
+    padding: 0 22px 19px;
     font-size: 14.5px;
     color: var(--gray);
     line-height: 1.65;
   }
 
-  .faq-body code {
-    background: #f0f0f0;
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 13px;
-    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
-  }
-
-  /* ---- Community ---- */
-  .community-content {
-    max-width: 580px;
+  /* ====== CTA panel ====== */
+  .cta-panel {
+    max-width: var(--max-w);
     margin: 0 auto;
+    background:
+      radial-gradient(700px 300px at 80% -60px, rgba(232, 98, 42, 0.35), transparent 65%),
+      var(--ink);
+    border-radius: 24px;
+    padding: 72px 40px;
     text-align: center;
+    box-shadow: var(--shadow-lg);
   }
 
-  .community-content p {
+  .cta-panel h2 {
+    color: #fff;
+    font-size: clamp(26px, 3.6vw, 38px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.15;
+    margin-bottom: 14px;
+  }
+
+  .cta-panel p {
+    color: #a3a3ad;
     font-size: 16px;
-    color: var(--gray);
-    line-height: 1.7;
-    margin-bottom: 28px;
+    max-width: 460px;
+    margin: 0 auto 32px;
   }
 
-  .community-links {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
+  .cta-buttons { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
 
-  .community-links .btn {
-    font-size: 14px;
-    padding: 11px 22px;
-  }
-
-  /* ---- Tip jar ---- */
+  /* ====== Tip jar + footer ====== */
   .tipjar {
     text-align: center;
-    padding: 36px 24px 8px;
+    padding: 56px 28px 8px;
     max-width: 560px;
     margin: 0 auto;
   }
 
   .tipjar p {
     font-size: 14px;
-    color: #888;
+    color: var(--gray-light);
     line-height: 1.6;
     margin-bottom: 16px;
   }
 
-  .tipjar-button {
-    display: inline-block;
-    min-height: 44px;
-  }
+  .tipjar-button { display: inline-block; min-height: 44px; }
 
-  /* ---- Footer ---- */
   footer {
-    text-align: center;
-    padding: 36px 24px;
-    border-top: 1px solid #e8e8eb;
-    font-size: 13px;
-    color: #999;
-    line-height: 1.8;
+    padding: 40px 28px 48px;
+    border-top: 1px solid var(--card-border);
+    margin-top: 48px;
   }
 
-  footer a { color: #999; font-weight: 500; }
-  footer a:hover { color: var(--orange); }
+  .footer-inner {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-weight: 700;
+    font-size: 14.5px;
+    color: var(--ink);
+  }
+
+  .footer-meta {
+    font-size: 13px;
+    color: var(--gray-light);
+  }
+
+  .footer-meta a { color: var(--gray); font-weight: 500; }
+  .footer-meta a:hover { color: var(--orange); }
 </style>
 </head>
 <body>
 
+<!-- ============ NAV ============ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="#top">
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="KickFlip logo">
+        <rect width="40" height="40" rx="9" fill="#1a1a1a"/>
+        <rect x="4" y="22" width="32" height="6" rx="3" fill="#E8622A"/>
+        <circle cx="11" cy="31" r="3" fill="#fff"/>
+        <circle cx="29" cy="31" r="3" fill="#fff"/>
+        <text x="20" y="19" text-anchor="middle" font-family="'DM Sans', sans-serif" font-weight="800" font-size="18" fill="#fff">K</text>
+      </svg>
+      KickFlip
+    </a>
+    <div class="nav-links">
+      <a href="#phases">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#tour">Tour</a>
+      <a href="#faq">FAQ</a>
+      <a class="nav-cta" href="https://github.com/xavierschwindtwrites-ai/kickflip/releases/latest">
+        Download free
+      </a>
+    </div>
+  </div>
+</nav>
+
 <!-- ============ HERO ============ -->
-<header class="hero">
-  <div>
-    <span class="hero-badge">
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="5"/></svg>
-      v0.3.0 now available
-    </span>
-  </div>
+<header class="hero" id="top">
+  <div class="hero-badge"><span class="pulse"></span> v0.3.0 — redesigned around clarity</div>
 
-  <div class="hero-logo">
-    <svg width="72" height="72" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="KickFlip logo">
-      <rect width="40" height="40" rx="8" fill="#1a1a1a"/>
-      <rect x="4" y="22" width="32" height="6" rx="3" fill="#E8622A"/>
-      <circle cx="11" cy="31" r="3" fill="#fff"/>
-      <circle cx="29" cy="31" r="3" fill="#fff"/>
-      <rect x="9" y="28" width="4" height="1.5" rx="0.75" fill="#888"/>
-      <rect x="27" y="28" width="4" height="1.5" rx="0.75" fill="#888"/>
-      <text x="20" y="19" text-anchor="middle" font-family="'DM Sans', sans-serif" font-weight="800" font-size="20" fill="#fff">K</text>
-    </svg>
-  </div>
-
-  <h1>Plan your Kickstarter.<br>Know your numbers.</h1>
+  <h1>Plan your Kickstarter.<br><span class="accent">Know your numbers.</span></h1>
 
   <p class="hero-sub">
     The free desktop app that does the spreadsheet thinking so you don&rsquo;t have to.
-    Built for indie authors. No account. Your data never leaves your computer.
+    Built for authors. No account. Your data never leaves your computer.
   </p>
 
   <div class="hero-buttons">
-    <a class="btn" href="https://github.com/xavierschwindtwrites-ai/kickflip/releases/latest">
+    <a class="btn btn-primary" href="https://github.com/xavierschwindtwrites-ai/kickflip/releases/latest">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m-5-5 5 5 5-5"/><path d="M5 20h14"/></svg>
       Download for Mac
     </a>
@@ -575,62 +747,186 @@
     </a>
     <a class="btn btn-ghost" href="https://github.com/xavierschwindtwrites-ai/kickflip">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-      View on GitHub
+      View source
     </a>
   </div>
 
   <p class="hero-note">
-    Mac: one terminal command on first launch &mdash; instructions below.<br>
-    Windows: click &ldquo;More info&rdquo; then &ldquo;Run anyway&rdquo; if prompted.
+    Free forever &middot; 100% open source &middot; <a href="#install">one-time install note for Mac &amp; Windows</a>
   </p>
+
+  <div class="hero-shot">
+    <div class="app-frame">
+      <div class="app-frame-bar"><i></i><i></i><i></i></div>
+      <img src="https://i.imgur.com/gZjzAfV.png" alt="KickFlip dashboard showing confidence score, plan completion, and scenario projections" loading="eager">
+    </div>
+  </div>
 </header>
 
-<!-- Trust bar -->
-<div class="trust-bar">
-  <div class="trust-item">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-    100% free, forever
-  </div>
-  <div class="trust-item">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-    Works fully offline
-  </div>
-  <div class="trust-item">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-    Your data, your machine
-  </div>
-  <div class="trust-item">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-    Open source (MIT)
+<!-- ============ TRUST ============ -->
+<div class="trust">
+  <div class="trust-inner">
+    <div class="trust-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      100% free, forever
+    </div>
+    <div class="trust-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      Works fully offline
+    </div>
+    <div class="trust-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Your data, your machine
+    </div>
+    <div class="trust-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+      Open source (MIT)
+    </div>
   </div>
 </div>
 
+<!-- ============ PHASES ============ -->
+<section class="phases" id="phases">
+  <span class="kicker">How it works</span>
+  <h2 class="section-heading">Three phases. One clear head.</h2>
+  <p class="section-sub">KickFlip walks the same path your campaign does — so at every moment you know exactly what to work on next.</p>
+
+  <div class="phases-grid">
+    <div class="phase-card">
+      <div class="phase-num">Phase 01</div>
+      <h3>Plan</h3>
+      <p>Set up your project, gather quotes, price your tiers, and stress-test three funding scenarios before you commit to a goal.</p>
+      <div class="phase-tools">
+        <span>Project Setup</span><span>Unit Costs</span><span>Pricing &amp; Tiers</span><span>Shipping</span><span>Scenarios</span><span>Stretch Goals</span>
+      </div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">Phase 02</div>
+      <h3>Launch</h3>
+      <p>Track pre-launch followers against your targets, work the readiness checklist, and log daily totals once you&rsquo;re live.</p>
+      <div class="phase-tools">
+        <span>Launch Plan</span><span>Live Tracker</span>
+      </div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">Phase 03</div>
+      <h3>Wrap up</h3>
+      <p>Plan fulfillment across printers and pledge managers, then compare actuals to projections so campaign two starts smarter.</p>
+      <div class="phase-tools">
+        <span>Fulfillment</span><span>Retrospective</span><span>Summary</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ VIDEO ============ -->
-<section>
+<section id="video">
+  <span class="kicker">Walkthrough</span>
   <h2 class="section-heading">See it in action</h2>
-  <p class="section-sub">A full walkthrough of every screen &mdash; from pricing your tiers to planning fulfillment without surprise FedEx invoices.</p>
+  <p class="section-sub">A full tour of every screen — from pricing your tiers to planning fulfillment without surprise invoices.</p>
   <div class="video-wrap">
     <iframe
-      width="100%"
       src="https://www.youtube.com/embed/H6T3xEwhm8U?rel=0&modestbranding=1"
       title="KickFlip walkthrough for indie authors"
-      frameborder="0"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
       allowfullscreen>
     </iframe>
   </div>
 </section>
 
+<!-- ============ FEATURES ============ -->
+<section class="features" id="features">
+  <span class="kicker">The toolkit</span>
+  <h2 class="section-heading">Everything you need, none of the spreadsheets</h2>
+  <p class="section-sub">A focused set of tools, zero subscriptions — every screen answers a question you&rsquo;d otherwise lose sleep over.</p>
+  <div class="features-grid">
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <h3>Per-backer margin calculator</h3>
+      <p>See exactly what lands in your pocket after the platform, your printer, and the post office have all taken their cut. Digital-only tiers skip the print math entirely.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      <h3>Three-scenario modeler</h3>
+      <p>Plan for the conservative campaign, the expected one, and the breakout you secretly hope for — with per-tier weighting that matches your real reward mix.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      </div>
+      <h3>Shipping exposure</h3>
+      <p>US, UK, EU, Canada, Australia, Rest of World. See your full international shipping exposure before you set a funding goal you&rsquo;ll regret.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <h3>Drag-and-drop stretch goals</h3>
+      <p>Build a stretch ladder where each rung is funded by the backers who unlock it — not by your savings account.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <h3>Launch Plan</h3>
+      <p>Followers, readiness checklist, campaign timing, and outreach tracking on one screen. See exactly how many followers you need for each scenario.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      </div>
+      <h3>Live campaign tracker</h3>
+      <p>Log daily backer and funding totals while your campaign runs — funding chart, daily average, and a projected final, instead of refreshing Kickstarter every twelve minutes.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      </div>
+      <h3>Multi-printer fulfillment</h3>
+      <p>Split fulfillment across multiple printers, assign tiers to each, and see per-entry and aggregate costs roll up automatically.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <h3>Printable campaign summary</h3>
+      <p>Your whole plan on one page — scenarios, tier margins, stretch ladder, timeline. Print it, PDF it, pin it above your desk.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h3>Post-campaign retrospective</h3>
+      <p>Compare actual costs and backer counts to your projections so the next campaign starts from lessons, not vibes.</p>
+    </div>
+
+  </div>
+</section>
+
 <!-- ============ SCREENSHOTS ============ -->
-<section>
-  <h2 class="section-heading">A quick tour</h2>
-  <p class="section-sub">No abstract dashboards. Real screens, real numbers, all running locally on your laptop.</p>
+<section id="tour">
+  <span class="kicker">A quick tour</span>
+  <h2 class="section-heading">Real screens, real numbers</h2>
+  <p class="section-sub">No abstract dashboards — everything runs locally on your laptop.</p>
   <div class="shots-grid">
     <div class="shot">
-      <img src="https://i.imgur.com/OU5RhZl.png" alt="KickFlip sidebar showing the twelve campaign planning sections" loading="lazy">
+      <img src="https://i.imgur.com/OU5RhZl.png" alt="KickFlip sidebar showing the campaign planning sections" loading="lazy">
       <div class="shot-caption">
-        <strong>Twelve sections, one app</strong>
-        Work through them in order and your campaign plan builds itself &mdash; from book setup to post-mortem.
+        <strong>The whole journey, one sidebar</strong>
+        Plan, launch, and wrap up — work through the phases in order and your campaign plan builds itself.
       </div>
     </div>
     <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -638,113 +934,25 @@
         <img src="https://i.imgur.com/gZjzAfV.png" alt="KickFlip dashboard showing campaign overview metrics" loading="lazy">
         <div class="shot-caption">
           <strong>Dashboard</strong>
-          The whole campaign at a glance &mdash; goal, projected raise, per-backer margin, and what&rsquo;s still missing before you can launch.
+          The whole campaign at a glance — confidence score, projected scenarios, and exactly what&rsquo;s still missing before you can launch.
         </div>
       </div>
       <div class="shot">
-        <img src="https://i.imgur.com/kjifKNY.png" alt="KickFlip Book Setup page with campaign basics and book details fields" loading="lazy">
+        <img src="https://i.imgur.com/kjifKNY.png" alt="KickFlip Project Setup page with campaign basics fields" loading="lazy">
         <div class="shot-caption">
-          <strong>Book Setup</strong>
-          Start with the basics: launch date, page count, trim size, format. Every later screen reads from these fields, so you only enter the truth once.
+          <strong>Project Setup</strong>
+          Start with the basics: launch date, estimates, fees. Every later screen reads from these fields, so you only enter the truth once.
         </div>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ============ FEATURES ============ -->
-<section>
-  <h2 class="section-heading">Everything you need, none of the spreadsheets</h2>
-  <p class="section-sub">A focused set of tools in one app, zero subscriptions — reorganized in v0.3 around three phases: plan, launch, wrap up.</p>
-  <div class="features-grid">
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      </div>
-      <h3>Per-backer margin calculator <span class="badge-improved">Improved</span></h3>
-      <p>See exactly what lands in your pocket after Kickstarter, your printer, and the post office have all taken their cut. Digital-only tiers (ebook, audiobook, PDF) skip the printing math entirely.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      </div>
-      <h3>Three-scenario modeler <span class="badge-improved">Improved</span></h3>
-      <p>Plan for the conservative campaign, the expected one, and the breakout you secretly hope for. Custom per-tier weighting means the numbers match your actual reward mix &mdash; not some Kickstarter average.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      </div>
-      <h3>Shipping planner</h3>
-      <p>US, UK, EU, Canada, Australia, Rest of World. See your full international shipping exposure before you set a funding goal you&rsquo;ll later regret.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      </div>
-      <h3>Drag-and-drop stretch goals <span class="badge-improved">Improved</span></h3>
-      <p>Build a stretch ladder where each rung is funded by the backers who unlock it &mdash; not by your savings account. Reorder with a drag, not a panicked spreadsheet rewrite.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      </div>
-      <h3>Multi-printer fulfillment <span class="badge-new">New</span></h3>
-      <p>One printer for paperbacks, another for the special edition hardcovers, a third for the bookmarks. Assign tiers to each and watch the per-entry and aggregate costs roll up automatically.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      </div>
-      <h3>Campaign management <span class="badge-new">New</span></h3>
-      <p>Run as many campaigns side-by-side as you like &mdash; for sequels, special editions, or that &ldquo;what if I priced it differently?&rdquo; experiment. Rename, duplicate, or delete from the sidebar.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      </div>
-      <h3>Launch Plan with follower tracking <span class="badge-improved">Improved</span></h3>
-      <p>Followers, readiness checklist, campaign timing, and outreach tracking on a single screen. Punch in your follower count and see exactly how many more you need for each scenario.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-      </div>
-      <h3>Live campaign tracker <span class="badge-new">New</span></h3>
-      <p>Once you&rsquo;re live, log daily backer and funding totals and watch the trajectory. Funding chart, daily average, and a projected final &mdash; instead of refreshing the Kickstarter page every twelve minutes.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><polyline points="9 12 11 14 15 10"/></svg>
-      </div>
-      <h3>Launch readiness check</h3>
-      <p>A checklist that reads your actual data &mdash; pricing, shipping, printer quotes, outreach &mdash; and tells you whether you&rsquo;re truly ready to launch or just very, very optimistic.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      </div>
-      <h3>Post-campaign retrospective</h3>
-      <p>Compare actual costs and backer counts to your projections so the next campaign starts from lessons, not vibes. Future-you will thank present-you.</p>
-    </div>
-
   </div>
 </section>
 
 <!-- ============ INSTALL ============ -->
-<section>
+<section class="install" id="install">
+  <span class="kicker">Getting started</span>
   <h2 class="section-heading">Up and running in two minutes</h2>
-  <p class="section-sub">Download the installer, accept the (one-time) security warning, and start planning. No account creation, no email confirmation, no &ldquo;welcome to our newsletter.&rdquo;</p>
+  <p class="section-sub">Download the installer, accept the (one-time) security warning, and start planning. No account, no email confirmation, no &ldquo;welcome to our newsletter.&rdquo;</p>
   <div class="install-grid">
     <div class="install-card">
       <h3>
@@ -753,15 +961,14 @@
       </h3>
       <ol>
         <li>Download the .dmg file</li>
-        <li>Open it and drag KickFlip to your Applications folder</li>
-        <li>Try to open KickFlip &mdash; macOS will show a security warning</li>
-        <li>Open Terminal (Command + Space, type Terminal, press Enter)</li>
-        <li>Paste this command and press Enter:
+        <li>Open it and drag KickFlip to Applications</li>
+        <li>Try to open KickFlip — macOS shows a security warning</li>
+        <li>Open Terminal and run:
           <div class="install-code">xattr -cr /Applications/KickFlip.app</div>
         </li>
-        <li>Double-click KickFlip in Applications &mdash; it opens normally from now on</li>
+        <li>Open KickFlip — it works normally from now on</li>
       </ol>
-      <p class="install-note">This one-time step is required because KickFlip is not yet signed with an Apple Developer certificate. You&rsquo;ll never need to run it again.</p>
+      <p class="install-note">One-time step, required because KickFlip isn&rsquo;t yet signed with an Apple Developer certificate. You&rsquo;ll never need it again.</p>
     </div>
     <div class="install-card">
       <h3>
@@ -770,99 +977,96 @@
       </h3>
       <ol>
         <li>Download the .exe installer</li>
-        <li>Run it &mdash; click &ldquo;More info&rdquo; then &ldquo;Run anyway&rdquo; if SmartScreen appears</li>
+        <li>Run it — click &ldquo;More info&rdquo; then &ldquo;Run anyway&rdquo; if SmartScreen appears</li>
         <li>Launch KickFlip from the Start menu</li>
-        <li>Start planning your campaign</li>
+        <li>Future updates install automatically</li>
       </ol>
-      <p class="install-note">The SmartScreen prompt appears because KickFlip isn&rsquo;t yet code-signed. It&rsquo;s safe to proceed &mdash; the source code is fully open on GitHub.</p>
+      <p class="install-note">The SmartScreen prompt appears because KickFlip isn&rsquo;t yet code-signed. The source is fully open on GitHub if you&rsquo;d like to verify.</p>
     </div>
   </div>
 </section>
 
 <!-- ============ FAQ ============ -->
-<section>
+<section id="faq">
+  <span class="kicker">FAQ</span>
   <h2 class="section-heading">Questions you might be having</h2>
-  <p class="section-sub">The honest answers to the things every indie author asks before downloading another desktop app.</p>
+  <p class="section-sub">Honest answers to the things every indie author asks before downloading another desktop app.</p>
   <div class="faq-list">
 
     <details class="faq-item">
       <summary>Is it really free? Where&rsquo;s the catch?</summary>
       <div class="faq-body">
-        Really free. No subscription, no in-app purchases, no &ldquo;pro tier&rdquo; gating the useful features. KickFlip is MIT-licensed and the source is on GitHub &mdash; you can read every line yourself. The catch is there is no catch.
+        Really free. No subscription, no in-app purchases, no &ldquo;pro tier&rdquo; gating the useful features. KickFlip is MIT-licensed and the source is on GitHub — you can read every line yourself. The catch is there is no catch.
       </div>
     </details>
 
     <details class="faq-item">
       <summary>Where does my campaign data go?</summary>
       <div class="faq-body">
-        Into a local SQLite file on your machine. KickFlip makes zero network requests &mdash; no analytics, no telemetry, no cloud sync. If your laptop is offline, KickFlip works exactly the same. And as of v0.2.1+, every campaign can be exported to a JSON file from the sidebar &mdash; perfect for backups or moving between machines.
+        Into a local SQLite file on your machine. KickFlip makes zero network requests for your data — no analytics, no telemetry, no cloud sync. And every campaign can be exported to a JSON file from the sidebar — perfect for backups or moving between machines.
       </div>
     </details>
 
     <details class="faq-item">
       <summary>Do I need to be a spreadsheet person to use this?</summary>
       <div class="faq-body">
-        No. The whole point is to spare you that. Type your numbers into the relevant fields &mdash; pledge amounts, page counts, shipping rates &mdash; and KickFlip handles the formulas. You&rsquo;ll see the math, but you don&rsquo;t have to write it.
+        No. The whole point is to spare you that. Type your numbers into the relevant fields — pledge amounts, unit costs, shipping rates — and KickFlip handles the formulas. You&rsquo;ll see the math, but you don&rsquo;t have to write it.
       </div>
     </details>
 
     <details class="faq-item">
-      <summary>What if I&rsquo;m not launching on Kickstarter?</summary>
+      <summary>What if I&rsquo;m not launching on Kickstarter — or not launching a book?</summary>
       <div class="faq-body">
-        KickFlip is built around Kickstarter&rsquo;s fee structure (5% platform + ~3% payment processing), but the margin, shipping, and fulfillment thinking transfers cleanly to BackerKit, Indiegogo, or even a direct pre-order. Just adjust the fees and you&rsquo;re modeling whatever platform you like.
+        KickFlip defaults to Kickstarter&rsquo;s fee structure (5% platform + ~3% processing), but both rates are fully adjustable — so BackerKit, Indiegogo, or direct pre-orders model cleanly. And as of v0.3, nothing assumes you&rsquo;re making a book: any product with a unit cost and shipping works.
       </div>
     </details>
 
     <details class="faq-item">
       <summary>Can I run more than one campaign?</summary>
       <div class="faq-body">
-        Yes &mdash; as many as you want. The sidebar lets you create, rename, duplicate, and delete campaigns. Useful for series, multiple editions, or A/B-ing different reward structures before you commit to one.
+        Yes — as many as you want. Create, rename, duplicate, export, and delete campaigns from the sidebar. Useful for series, multiple editions, or A/B-ing reward structures before you commit.
       </div>
     </details>
 
     <details class="faq-item">
       <summary>Why isn&rsquo;t the app code-signed?</summary>
       <div class="faq-body">
-        Apple Developer and Microsoft signing certificates run a few hundred dollars a year, and KickFlip is free. The one-time security workaround on each platform takes about ten seconds. The source is open if you&rsquo;d like to verify nothing untoward is happening &mdash; no obfuscation, no bundled trackers, no surprises.
+        Apple Developer and Microsoft signing certificates run a few hundred dollars a year, and KickFlip is free. The one-time security workaround takes about ten seconds. The source is open if you&rsquo;d like to verify nothing untoward is happening.
       </div>
     </details>
 
     <details class="faq-item">
       <summary>Will my data survive an app update?</summary>
       <div class="faq-body">
-        Yes. KickFlip stores campaigns in your user data folder, which sits outside the app bundle. Updates replace the app, not your work. Schema migrations are handled automatically.
+        Yes. KickFlip stores campaigns in your user data folder, outside the app bundle. Updates replace the app, not your work — and on Windows, updates now install automatically.
       </div>
     </details>
 
     <details class="faq-item">
       <summary>I found a bug / want a feature. What now?</summary>
       <div class="faq-body">
-        Open an issue on <a href="https://github.com/xavierschwindtwrites-ai/kickflip/issues">GitHub</a>, or email me directly at <a href="mailto:xavier@hairyfeetwebsites.com">xavier@hairyfeetwebsites.com</a>. KickFlip is built and maintained by an indie author for indie authors, so your bug reports and feature requests shape the roadmap directly &mdash; I read every one and try to ship the fixes that make the biggest difference.
+        Open an issue on <a href="https://github.com/xavierschwindtwrites-ai/kickflip/issues">GitHub</a>, or email me directly at <a href="mailto:xavier@hairyfeetwebsites.com">xavier@hairyfeetwebsites.com</a>. KickFlip is built and maintained by an indie author for indie authors, so your reports shape the roadmap directly — I read every one.
       </div>
     </details>
 
   </div>
 </section>
 
-<!-- ============ COMMUNITY ============ -->
-<section>
-  <h2 class="section-heading">Built by an author, for the rest of us</h2>
-  <div class="community-content">
+<!-- ============ CTA ============ -->
+<section style="padding-top: 0;">
+  <div class="cta-panel">
+    <h2>Your campaign deserves a plan,<br>not a panic.</h2>
     <p>
-      I built KickFlip while planning my own Kickstarter, because the answer
-      to &ldquo;will I actually break even on shipping to the UK?&rdquo; was buried
-      in a spreadsheet I kept losing in iCloud. Every existing tool wanted my
-      email; none of them answered the questions I actually had. So I made one
-      that does &mdash; and gave it away. If it saves you a weekend of math,
-      pay it forward and tell another indie author.
+      Built by an author who couldn&rsquo;t find a tool that answered the questions that
+      actually mattered — so he made one and gave it away. If it saves you a weekend
+      of math, tell another indie author.
     </p>
-    <div class="community-links">
-      <a class="btn" href="https://github.com/xavierschwindtwrites-ai/kickflip/releases/latest">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m-5-5 5 5 5-5"/><path d="M5 20h14"/></svg>
-        Download v0.3.0
+    <div class="cta-buttons">
+      <a class="btn btn-primary" href="https://github.com/xavierschwindtwrites-ai/kickflip/releases/latest">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m-5-5 5 5 5-5"/><path d="M5 20h14"/></svg>
+        Download v0.3.0 — free
       </a>
       <a class="btn btn-ghost" href="https://github.com/xavierschwindtwrites-ai/kickflip">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
         Star on GitHub
       </a>
     </div>
@@ -882,8 +1086,21 @@
 
 <!-- ============ FOOTER ============ -->
 <footer>
-  <p>KickFlip v0.3.0 &mdash; by Xavier Schwindt / Crownling Entertainment</p>
-  <p>Free and open source &mdash; <a href="https://github.com/xavierschwindtwrites-ai/kickflip">MIT License</a> &mdash; <a href="https://github.com/xavierschwindtwrites-ai/kickflip/issues">Report an issue</a></p>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="40" height="40" rx="9" fill="#1a1a1a"/>
+        <rect x="4" y="22" width="32" height="6" rx="3" fill="#E8622A"/>
+        <circle cx="11" cy="31" r="3" fill="#fff"/>
+        <circle cx="29" cy="31" r="3" fill="#fff"/>
+        <text x="20" y="19" text-anchor="middle" font-family="'DM Sans', sans-serif" font-weight="800" font-size="18" fill="#fff">K</text>
+      </svg>
+      KickFlip <span style="font-weight: 400; color: var(--gray-light);">v0.3.0</span>
+    </div>
+    <div class="footer-meta">
+      By Xavier Schwindt / Crownling Entertainment &middot; <a href="https://github.com/xavierschwindtwrites-ai/kickflip">MIT License</a> &middot; <a href="https://github.com/xavierschwindtwrites-ai/kickflip/issues">Report an issue</a>
+    </div>
+  </div>
 </footer>
 
 </body>
